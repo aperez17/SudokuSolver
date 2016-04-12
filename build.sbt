@@ -7,7 +7,7 @@ lazy val commonSettings = Seq(
 lazy val root = (project in file(".")).
   settings(commonSettings:_*).
   settings(
-    name := "sudukoSolver",
+    name := "SudokuSolver",
     scalaVersion := "2.11.7",
     libraryDependencies += "org.specs2" %% "specs2-core" % "3.0" % "test",
 	resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases",
