@@ -1,12 +1,12 @@
 import org.specs2.mutable._
 
-class SudukoParserSpec extends Specification {
+class SudokuParserSpec extends Specification {
 
   "Parser Puzzle Test" should {
     "create default of none" in {
       SudokuParser.puzzleFromFile("test") must_== Puzzle("test", None, None, Vector.empty)
     }
-    
+
     "have a parsed board 9x9" in {
       val puzzle = SudokuParser.puzzleFromFile("puzzle1")
       puzzle.size must_== Some("9x9")
