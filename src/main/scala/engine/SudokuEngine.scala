@@ -1,6 +1,6 @@
-case class sudukoEngine(
+case class SudokuEngine(
     algorithm: String,
-    implementation: sudukoSolver){
+    implementation: SudokuSolver){
   
   /**
    * Solve all the puzzles and output the result to true if all

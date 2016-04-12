@@ -1,10 +1,10 @@
 import java.io._
 import scala.io._
 
-object SudukoParser {
+object SudokuParser {
   
  /**
-  * Takes a file and outputs a suduko puzzle in the format:
+  * Takes a file and outputs a sudoku puzzle in the format:
   * Difficulty:Easy
   * Size:9x9
   * ... where ... contains the board

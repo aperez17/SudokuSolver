@@ -1,4 +1,4 @@
-trait sudukoSolver{
+trait SudokuSolver{
   /**
    * Solve a given puzzle from a given filename
    */
