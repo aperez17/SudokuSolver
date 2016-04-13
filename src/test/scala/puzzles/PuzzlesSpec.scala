@@ -36,5 +36,12 @@ class PuzzlesSpec extends Specification {
       }
       1 must_== 1
     }
+    
+    "invalidate valid solutions that alter original board" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val solution2 = SudokuPuzzles.testSolutions.getOrElse("puzzle2, Easy, 9x9", "")
+      val puzzleSolution = SudokuParser.puzzleFromFile(solution2)
+      puzzle.validateSolution(puzzleSolution.board) must_== false
+    }
   }
 }
