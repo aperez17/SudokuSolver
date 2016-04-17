@@ -8,7 +8,7 @@ case class SudokuEngine(
    * @param puzzles: filenames for the puzzles to solve
    */
   def solve(puzzles: Set[Puzzle]): Boolean = {
-    val results = puzzles.map(implementation.solve(_))
+    val results = puzzles.map(puzzle => puzzle.validateSolution(implementation.solve(puzzle)))
     !results.contains(false)
   }
 }

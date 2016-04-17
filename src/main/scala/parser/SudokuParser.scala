@@ -43,8 +43,8 @@ object SudokuParser {
   * Grab the board from the puzzle
   */
  def parseBoardFromLines(puzzle: Puzzle, lines: List[String]): Puzzle = {
-   val board = lines.foldLeft(Vector.empty[Vector[Option[Int]]]) { case (board, lines) =>
-     board :+ lines.trim.split(",").toVector.map{ digit =>
+   val board = lines.foldLeft(Seq.empty[Seq[Option[Int]]]) { case (board, lines) =>
+     board :+ lines.trim.split(",").toSeq.map{ digit =>
        if(digit == "x"){
          None
        } else {
