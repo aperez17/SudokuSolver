@@ -12,8 +12,8 @@ object Puzzle {
    * x1xx2xx3x
    * 2x3xx4xx1
    */
-  def boardMapToColumns(puzzle: Vector[Vector[Option[Int]]]): Map[Int, Vector[Option[Int]]] = {
-    puzzle.foldLeft(Map.empty[Int, Vector[Option[Int]]]){ case (boardInColumns, row) =>
+  def boardMapToColumns(board: Seq[Seq[Option[Int]]]): Map[Int, Seq[Option[Int]]] = {
+    board.foldLeft(Map.empty[Int, Seq[Option[Int]]]){ case (boardInColumns, row) =>
       row.foldLeft(boardInColumns) { case (board, columnValueOpt) =>
         val cindex = row.indexOf(columnValueOpt)
         val column = board.getOrElse(cindex, Vector.empty[Option[Int]])
@@ -32,9 +32,9 @@ object Puzzle {
    * 4  ...
    * 5  ...
    */
-  def boardMapToRows(puzzle: Vector[Vector[Option[Int]]]): Map[Int, Vector[Option[Int]]] = {
-    puzzle.foldLeft(Map.empty[Int, Vector[Option[Int]]]){ case (boardInColumns, row) =>
-      val rindex = puzzle.indexOf(row)
+  def boardMapToRows(board: Seq[Seq[Option[Int]]]): Map[Int, Seq[Option[Int]]] = {
+    board.foldLeft(Map.empty[Int, Seq[Option[Int]]]){ case (boardInColumns, row) =>
+      val rindex = board.indexOf(row)
       boardInColumns + (rindex -> row)
     }
   }
@@ -42,11 +42,11 @@ object Puzzle {
   /**
    * A complete mapping of the index of every row,column to the Option[Int]
    */
-  def boardMapToRowsAndColumns(puzzle: Vector[Vector[Option[Int]]]): Map[(Int, Int), Option[Int]] = {
-    puzzle.foldLeft(Map.empty[(Int,Int), Option[Int]]){ case (map, row) =>
-      val rindex = puzzle.indexOf(row)
+  def boardMapToRowsAndColumns(board: Seq[Seq[Option[Int]]]): Map[(Int, Int), Option[Int]] = {
+    board.foldLeft(Map.empty[(Int,Int), Option[Int]]){ case (map, row) =>
+      val rindex = board.indexOf(row)
       row.foldLeft(map) { case (m, numberOpt) =>
-        val cindex = puzzle.indexOf(numberOpt)
+        val cindex = board.indexOf(numberOpt)
         map + ((rindex,cindex) -> numberOpt)
       }
     }
@@ -58,11 +58,11 @@ object Puzzle {
    * (1,0),(1,1),(1,2)
    * (2,0),(2,1),(2,2)
    */
-  def boardMapToSquares(puzzle: Vector[Vector[Option[Int]]]): Map[(Int, Int), Vector[Option[Int]]] = {
-    val size = puzzle.length
+  def boardMapToSquares(board: Seq[Seq[Option[Int]]]): Map[(Int, Int), Seq[Option[Int]]] = {
+    val size = board.length
     val sqrt = Math.sqrt(size).toInt
-    puzzle.foldLeft(Map.empty[(Int, Int), Vector[Option[Int]]]) { case (squares, row) =>
-      val rindex = puzzle.indexOf(row)
+    board.foldLeft(Map.empty[(Int, Int), Seq[Option[Int]]]) { case (squares, row) =>
+      val rindex = board.indexOf(row)
       row.foldLeft(squares) { case (s, numberOpt) =>
         val cindex = row.indexOf(numberOpt)
         val square = s.getOrElse((rindex/sqrt, cindex/sqrt), Vector.empty[Option[Int]])
@@ -74,7 +74,7 @@ object Puzzle {
   /**
    * Turns the board into a 2D array
    */
-  def boardTo2DArray(puzzle: Vector[Vector[Option[Int]]]): Array[Array[Option[Int]]] = {
+  def boardTo2DArray(puzzle: Seq[Seq[Option[Int]]]): Array[Array[Option[Int]]] = {
     val board = for {
       row <- puzzle
     } yield {
@@ -94,7 +94,7 @@ case class Puzzle(
     name: String,
     difficulty: Option[String] = None,
     size: Option[String] = None,
-    board: Vector[Vector[Option[Int]]] = Vector.empty) {
+    board: Seq[Seq[Option[Int]]] = Vector.empty) {
   
   /**
    * For debugging use
@@ -142,7 +142,7 @@ case class Puzzle(
    * all numbers are between the allowed interval, and that the length
    * is the required length
    */
-  private def validateLine(line: Vector[Option[Int]], valid: Boolean): Boolean = {
+  private def validateLine(line: Seq[Option[Int]], valid: Boolean): Boolean = {
     line.foldLeft(valid){ case (v, numberOpt) =>
         numberOpt match {
           case Some(number) =>
@@ -164,32 +164,32 @@ case class Puzzle(
   /**
    * Validates that a puzzle is solved correctly
    */
-  def validateSolution(puzzle: Vector[Vector[Option[Int]]]): Boolean = {
-    validateRows(puzzle) && validateColumns(puzzle) && validateSquares(puzzle) && validateInputNumbers(puzzle)
+  def validateSolution(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
+    validateRows(puzzleBoard) && validateColumns(puzzleBoard) && validateSquares(puzzleBoard) && validateInputNumbers(puzzleBoard)
   }
   
-  private def validateRows(puzzle: Vector[Vector[Option[Int]]]): Boolean = {
-    puzzle.foldLeft(true){ case (valid, row) => 
+  private def validateRows(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
+    puzzleBoard.foldLeft(true){ case (valid, row) => 
       validateLine(row, valid)
     }
   }
   
-  private def validateColumns(puzzle: Vector[Vector[Option[Int]]]): Boolean = {
-    val boardMapInColumns = Puzzle.boardMapToColumns(puzzle)
+  private def validateColumns(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
+    val boardMapInColumns = Puzzle.boardMapToColumns(puzzleBoard)
     boardMapInColumns.foldLeft(true) { case (valid, (cindex, column)) =>
       validateLine(column, valid)
     }
   }
   
-  private def validateSquares(puzzle: Vector[Vector[Option[Int]]]): Boolean = {
-    val squares = Puzzle.boardMapToSquares(puzzle)
+  private def validateSquares(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
+    val squares = Puzzle.boardMapToSquares(puzzleBoard)
     squares.foldLeft(true) { case (valid, (cindex, column)) =>
       validateLine(column, valid)
     }
   }
   
-  private def validateInputNumbers(puzzle: Vector[Vector[Option[Int]]]): Boolean = {
-    val solutionMap = Puzzle.boardMapToRowsAndColumns(puzzle)
+  private def validateInputNumbers(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
+    val solutionMap = Puzzle.boardMapToRowsAndColumns(puzzleBoard)
     val originalMap = Puzzle.boardMapToRowsAndColumns(board)
     solutionMap.keys.foldLeft(true) { case (valid, (rindex, cindex)) =>
       val originalVal = originalMap.getOrElse((rindex,cindex), None)
