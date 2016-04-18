@@ -1,4 +1,4 @@
-object SudokuSolver extends App {
+object Solver extends App {
 
   class Solver {
     

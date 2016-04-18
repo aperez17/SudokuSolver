@@ -3,6 +3,61 @@ import org.specs2.mutable._
 class BackTrackerSpec extends Specification {
 
   "Puzzles" should {
+    "Find Unsigned Number correctly" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val firstLocation = BackTracker.findUnassignedLocation(puzzle.board, 0, 0)
+      firstLocation must_== (0,0)
+      val secondLocation = BackTracker.findUnassignedLocation(puzzle.board,0,1)
+      secondLocation must_== (0,2)
+      val nextRow = BackTracker.findUnassignedLocation(puzzle.board, 1,8)
+      nextRow must_== (2,1)
+    }
+    
+    "Used in row should check correctly" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      BackTracker.usedInRow(puzzle.board, 0, 0, 9) must_== true
+      BackTracker.usedInRow(puzzle.board, 0, 0, 2) must_== false
+      BackTracker.usedInRow(puzzle.board, 2, 0, 5) must_== true
+      BackTracker.usedInRow(puzzle.board, 2, 0, 3) must_== false
+    }
+    
+    "Used in column should check correctly" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      BackTracker.usedInColumn(puzzle.board, 0, 0, 9) must_== true
+      BackTracker.usedInColumn(puzzle.board, 0, 0, 3) must_== false
+      BackTracker.usedInColumn(puzzle.board, 2, 7, 6) must_== true
+      BackTracker.usedInColumn(puzzle.board, 2, 8, 9) must_== false
+    }
+    
+    "Used in box should check correctly" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      BackTracker.usedInBox(puzzle.board, 0, 0, 8) must_== true
+      BackTracker.usedInBox(puzzle.board, 0, 0, 9) must_== false
+      BackTracker.usedInBox(puzzle.board, 0, 6, 9) must_== true
+      BackTracker.usedInBox(puzzle.board, 0, 6, 6) must_== false
+      BackTracker.usedInBox(puzzle.board, 6, 6, 6) must_== true
+      BackTracker.usedInBox(puzzle.board, 6, 6, 9) must_== false
+    }
+    
+    "Is safe should check correctly" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      BackTracker.isSafe(puzzle.board, 0, 0, 9) must_== false
+      BackTracker.isSafe(puzzle.board, 0, 0, 3) must_== true
+      BackTracker.isSafe(puzzle.board, 2, 7, 6) must_== false
+      BackTracker.isSafe(puzzle.board, 2, 7, 1) must_== true
+      BackTracker.isSafe(puzzle.board, 7, 5, 3) must_== false
+      BackTracker.isSafe(puzzle.board, 7, 5, 2) must_== true
+      BackTracker.isSafe(puzzle.board, 8, 8, 4) must_== false
+      BackTracker.isSafe(puzzle.board, 8, 8, 8) must_== true
+    }
+    
+    "Add number to board correctly" in {
+      val test1 = Seq(Seq(Some(1),Some(2)),Seq(None,Some(4)))
+      BackTracker.addNumberToBoard(test1, 1, 0, 3) must_== Seq(Seq(Some(1),Some(2)),Seq(Some(3),Some(4)))
+      val test2 = Seq(Seq(Some(1),Some(2)),Seq(Some(3),None))
+      BackTracker.addNumberToBoard(test2, 1, 1, 4) must_== Seq(Seq(Some(1),Some(2)),Seq(Some(3),Some(4)))
+    }
+    
     "validate baseline correctly" in {
       val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
       val puzzleSolution = BackTracker.solve(puzzle)
