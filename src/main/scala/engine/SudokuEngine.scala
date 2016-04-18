@@ -11,29 +11,23 @@ case class SudokuEngine(
     println()
     println("======================")
     println("RUNNING: " + algorithm)
-    time {
-      puzzles.map{  puzzle => 
+    val results = puzzles.map{  puzzle => 
         if(puzzle.board.isEmpty){
-          println("NO BOARD TO SOLVE, POSSIBLE PARSING FAILURE")
-          false
+          (println("NO BOARD TO SOLVE, POSSIBLE PARSING FAILURE"), 0L)
         } else {
+          val s0 = System.nanoTime()
           val puzzleSolution = implementation.solve(puzzle)
+          val s1 = System.nanoTime()
+          println()
           if(puzzle.validateSolution(puzzleSolution)){
-            println("Solved:")
-            Puzzle.printBoard(puzzle.name, puzzle.difficulty, puzzle.size, puzzleSolution)
+            println(s"Solved: ${puzzle.name} ${puzzle.difficulty.getOrElse("")} ${puzzle.size.getOrElse("")}")
+            (println(s"Elapsed time: " + (s1 - s0) + "ns"), s1-s0)
           } else {
-            println(s"Failed to solve ${puzzle.name}")
+            (println(s"Failed to solve ${puzzle.name}"), 0L)
           }
         }
       }
-    }
-  }
-  
-  def time[R](block: => R): R = {
-    val t0 = System.nanoTime()
-    val result = block    // call-by-name
-    val t1 = System.nanoTime()
-    println("Elapsed time: " + (t1 - t0) + "ns")
-    result
+    val sum = results.foldLeft(0L){case (total, (unit, time)) => total + time}
+    println("Total Elapsed time: " + sum + "ns")
   }
 }

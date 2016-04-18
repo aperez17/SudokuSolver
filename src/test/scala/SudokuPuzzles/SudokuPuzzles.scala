@@ -1,4 +1,4 @@
-object SudokuPuzzles {
+object TestSudokuPuzzles {
   val testCases = Map(
       "puzzle1, Easy, 9x9" -> "puzzles/puzzle1",
       "puzzle2, Easy, 9x9" -> "puzzles/puzzle2",

@@ -22,9 +22,9 @@ class SudokuParserSpec extends Specification {
     
     "parse all boards correctly" in {
       for {
-        testCase <- SudokuPuzzles.testCases.keys
+        testCase <- TestSudokuPuzzles.testCases.keys
       } yield {
-        val filename = SudokuPuzzles.testCases.getOrElse(testCase, "")
+        val filename = TestSudokuPuzzles.testCases.getOrElse(testCase, "")
         val puzzle = SudokuParser.puzzleFromFile(filename)
         puzzle.name must_== filename
         for {

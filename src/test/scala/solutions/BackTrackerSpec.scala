@@ -2,9 +2,9 @@ import org.specs2.mutable._
 
 class BackTrackerSpec extends Specification {
 
-  "Puzzles" should {
+  "BackTracker" should {
     "Find Unsigned Number correctly" in {
-      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val puzzle = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baseLineTest)
       val firstLocation = BackTracker.findUnassignedLocation(puzzle.board, 0, 0)
       firstLocation must_== (0,0)
       val secondLocation = BackTracker.findUnassignedLocation(puzzle.board,0,1)
@@ -14,7 +14,7 @@ class BackTrackerSpec extends Specification {
     }
     
     "Used in row should check correctly" in {
-      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val puzzle = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baseLineTest)
       BackTracker.usedInRow(puzzle.board, 0, 0, 9) must_== true
       BackTracker.usedInRow(puzzle.board, 0, 0, 2) must_== false
       BackTracker.usedInRow(puzzle.board, 2, 0, 5) must_== true
@@ -22,7 +22,7 @@ class BackTrackerSpec extends Specification {
     }
     
     "Used in column should check correctly" in {
-      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val puzzle = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baseLineTest)
       BackTracker.usedInColumn(puzzle.board, 0, 0, 9) must_== true
       BackTracker.usedInColumn(puzzle.board, 0, 0, 3) must_== false
       BackTracker.usedInColumn(puzzle.board, 2, 7, 6) must_== true
@@ -30,7 +30,7 @@ class BackTrackerSpec extends Specification {
     }
     
     "Used in box should check correctly" in {
-      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val puzzle = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baseLineTest)
       BackTracker.usedInBox(puzzle.board, 0, 0, 8) must_== true
       BackTracker.usedInBox(puzzle.board, 0, 0, 9) must_== false
       BackTracker.usedInBox(puzzle.board, 0, 6, 9) must_== true
@@ -40,7 +40,7 @@ class BackTrackerSpec extends Specification {
     }
     
     "Is safe should check correctly" in {
-      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val puzzle = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baseLineTest)
       BackTracker.isSafe(puzzle.board, 0, 0, 9) must_== false
       BackTracker.isSafe(puzzle.board, 0, 0, 3) must_== true
       BackTracker.isSafe(puzzle.board, 2, 7, 6) must_== false
@@ -70,7 +70,7 @@ class BackTrackerSpec extends Specification {
     }
     
     "validate baseline correctly" in {
-      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val puzzle = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baseLineTest)
       val puzzleSolution = BackTracker.solve(puzzle)
       puzzleSolution.size must_== 9
       puzzle.validateSolution(puzzleSolution) must_== true
