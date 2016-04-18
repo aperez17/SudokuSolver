@@ -2,7 +2,6 @@ object BackTracker extends SudokuSolver {
   def solve(puzzle: Puzzle): Seq[Seq[Option[Int]]] = {
     val (newBoard, value) = solveBackTrack(puzzle.board, 0, 0)
     val newPuzzle = puzzle.copy(board = newBoard)
-    newPuzzle.printBoard()
     if(value == false){
       puzzle.board
     } else {
@@ -24,8 +23,9 @@ object BackTracker extends SudokuSolver {
       for (i <- allNumbs){
         if(isSafe(board, newRow, newColumn, i)){
           val newBoard = addNumberToBoard(board, newRow, newColumn, i)
-          if(solveBackTrack(newBoard, newRow, newColumn)._2){
-            (newBoard, true)
+          val (result, isDone) = solveBackTrack(newBoard, newRow, newColumn)
+          if(isDone){
+            return (result, true)
           }
         }
       }
@@ -34,19 +34,9 @@ object BackTracker extends SudokuSolver {
   }
   
   def addNumberToBoard(board :Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int, number: Int): Seq[Seq[Option[Int]]] = {
-    board.foldLeft(Seq.empty[Seq[Option[Int]]]) { case (newBoard, row) => 
-      val r = board.indexOf(row)
-      val newRow = row.foldLeft(Seq.empty[Option[Int]]) { case (nr, numbOpt) => 
-        val c = row.indexOf(numbOpt)
-        
-        if(r == rIndex && c == cIndex){
-          nr :+ Some(number)
-        } else {
-          nr :+ numbOpt
-        }
-      }
-      newBoard :+ newRow
-    }
+    val row = board(rIndex)
+    val newRow = row.updated(cIndex, Some(number))
+    board.updated(rIndex, newRow)
   }
   
   def findUnassignedLocation(board: Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int): (Int, Int) = {

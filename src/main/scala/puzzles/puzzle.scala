@@ -82,24 +82,11 @@ object Puzzle {
     }
     board.toArray
   }
-}
-
-/**
- * @param name: Name of the puzzle
- * @param difficulty: Difficulty of the puzzle
- * @param size: the size of the board (9x9)
- * @param board: the board we will solve
- */
-case class Puzzle(
-    name: String,
-    difficulty: Option[String] = None,
-    size: Option[String] = None,
-    board: Seq[Seq[Option[Int]]] = Vector.empty) {
   
   /**
    * For debugging use
    */
-  def printBoard() = {
+  def printBoard(name: String, difficulty: Option[String], size: Option[String], board: Seq[Seq[Option[Int]]]) = {
     println(name)
     difficulty.map(println(_))
     size.map(println(_))
@@ -117,6 +104,19 @@ case class Puzzle(
       println()
     }
   }
+}
+
+/**
+ * @param name: Name of the puzzle
+ * @param difficulty: Difficulty of the puzzle
+ * @param size: the size of the board (9x9)
+ * @param board: the board we will solve
+ */
+case class Puzzle(
+    name: String,
+    difficulty: Option[String] = None,
+    size: Option[String] = None,
+    board: Seq[Seq[Option[Int]]] = Vector.empty) {
   
   lazy val sizeFromString: Int = {
     val rowSizeOpt = size map(s => s.split("x")(0))

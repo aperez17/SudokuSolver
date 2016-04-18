@@ -56,12 +56,24 @@ class BackTrackerSpec extends Specification {
       BackTracker.addNumberToBoard(test1, 1, 0, 3) must_== Seq(Seq(Some(1),Some(2)),Seq(Some(3),Some(4)))
       val test2 = Seq(Seq(Some(1),Some(2)),Seq(Some(3),None))
       BackTracker.addNumberToBoard(test2, 1, 1, 4) must_== Seq(Seq(Some(1),Some(2)),Seq(Some(3),Some(4)))
+      val test3 = Seq(Seq(Some(1),Some(2),None),Seq(Some(4),None,Some(6)),Seq(None,Some(8),Some(9)))
+      BackTracker.addNumberToBoard(
+          BackTracker.addNumberToBoard(
+              BackTracker.addNumberToBoard(test3, 0,2,3),1,1,5),2,0,7) must_== Seq(
+                  Seq(Some(1),Some(2),Some(3)),Seq(Some(4),Some(5),Some(6)),Seq(Some(7),Some(8),Some(9)))
+      val test4 = Seq(Seq(None,Some(2),None),Seq(Some(4),None,Some(6)),Seq(None,Some(8),Some(9)))
+      BackTracker.addNumberToBoard(
+          BackTracker.addNumberToBoard(
+            BackTracker.addNumberToBoard(
+              BackTracker.addNumberToBoard(test3, 0,0,1),0,2,3),1,1,5),2,0,7) must_== Seq(
+                  Seq(Some(1),Some(2),Some(3)),Seq(Some(4),Some(5),Some(6)),Seq(Some(7),Some(8),Some(9)))
     }
     
     "validate baseline correctly" in {
       val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
       val puzzleSolution = BackTracker.solve(puzzle)
-      puzzleSolution.size must_== 1
+      puzzleSolution.size must_== 9
+      puzzle.validateSolution(puzzleSolution) must_== true
     }
   }
 }
