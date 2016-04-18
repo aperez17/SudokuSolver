@@ -43,5 +43,20 @@ class PuzzlesSpec extends Specification {
       val puzzleSolution = SudokuParser.puzzleFromFile(solution2)
       puzzle.validateSolution(puzzleSolution.board) must_== false
     }
+    
+    "convert board to numbers correctly" in {
+      val puzzle = SudokuParser.puzzleFromFile(SudokuPuzzles.baseLineTest)
+      val boardAsInts = Puzzle.convertBoardToNumbers(puzzle.board)
+      boardAsInts must_== Seq(
+          Seq(0,1,0,6,0,0,0,9,0),
+          Seq(0,8,0,0,3,0,0,0,2),
+          Seq(5,0,7,0,0,0,0,0,4),
+          Seq(1,2,0,0,0,0,0,7,0),
+          Seq(0,0,0,1,0,0,0,5,0),
+          Seq(9,0,0,0,0,8,0,0,0),
+          Seq(0,0,2,0,0,3,4,0,1),
+          Seq(6,5,1,0,0,0,0,0,7),
+          Seq(0,0,0,0,0,0,0,6,0))
+    }
   }
 }

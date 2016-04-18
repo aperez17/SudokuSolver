@@ -8,6 +8,9 @@ case class SudokuEngine(
    * @param puzzles: filenames for the puzzles to solve
    */
   def solve(puzzles: Set[Puzzle]) = {
+    println()
+    println("======================")
+    println("RUNNING: " + algorithm)
     time {
       puzzles.map{  puzzle => 
         if(puzzle.board.isEmpty){

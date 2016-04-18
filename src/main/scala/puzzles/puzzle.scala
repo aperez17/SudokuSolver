@@ -84,6 +84,21 @@ object Puzzle {
   }
   
   /**
+   * Turns board from options to numbers (None =0)
+   */
+  def convertBoardToNumbers(board: Seq[Seq[Option[Int]]]): Seq[Seq[Int]] = {
+    board.foldLeft(Seq.empty[Seq[Int]]){ (newBoard, row) =>
+      val newRow = row.foldLeft(Seq.empty[Int]) { (nr, numbOpt) => 
+        numbOpt match {
+          case Some(numb) => nr :+ numb
+          case None => nr :+ 0
+        }
+      }
+      newBoard :+ newRow
+    }
+  }
+  
+  /**
    * For debugging use
    */
   def printBoard(name: String, difficulty: Option[String], size: Option[String], board: Seq[Seq[Option[Int]]]) = {
