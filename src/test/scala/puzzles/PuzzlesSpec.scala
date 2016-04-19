@@ -25,7 +25,7 @@ class PuzzlesSpec extends Specification {
     
     "invalidate invalid solutions" in {
       for {
-        testCase <- TestSudokuPuzzles.testSolutions.keys
+        testCase <- TestSudokuPuzzles.testSolutionsBAD.keys
       } yield {
         val filename = TestSudokuPuzzles.testCases.getOrElse(testCase, "")
         val puzzuleSolutionFile = TestSudokuPuzzles.testSolutionsBAD.getOrElse(testCase, "")
