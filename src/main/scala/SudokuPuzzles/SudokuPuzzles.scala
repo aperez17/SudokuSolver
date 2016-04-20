@@ -7,6 +7,7 @@ object SudokuPuzzles {
       "puzzle5, Medium, 9x9" -> "puzzles/puzzle5",
       "puzzle6, Hard, 9x9" -> "puzzles/puzzle6",
       "puzzle7, Hard, 9x9" -> "puzzles/puzzle7",
-      "puzzle8, Easy, 25x25" -> "puzzles/puzzle8")
+      "puzzle8, Easy, 25x25" -> "puzzles/puzzle8",
+      "Puzzle9, Hard, 25x25" -> "puzzles/puzzle9")
   lazy val baseLineTest = testCases.getOrElse("puzzle1, Easy, 9x9", "")
 }

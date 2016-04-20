@@ -2,9 +2,9 @@ object Puzzle {
   val EASY = "Easy"
   val MEDIUM = "Medium"
   val HARD = "hard"
-  
+
   //BELOW HELPER METHODS FOR IMPLEMENTATION
-  
+
   /**
    * Turns a board to map of the column index to the column
    * i.e.
@@ -21,7 +21,7 @@ object Puzzle {
       }
     }
   }
-  
+
   /**
    * Turns a board to map of the row index to the column
    * i.e.
@@ -38,7 +38,7 @@ object Puzzle {
       boardInColumns + (rindex -> row)
     }
   }
-  
+
   /**
    * A complete mapping of the index of every row,column to the Option[Int]
    */
@@ -51,7 +51,7 @@ object Puzzle {
       }
     }
   }
-  
+
   /**
    * Maps the board to squares such as
    * (0,0),(0,1),(0,2)
@@ -70,7 +70,7 @@ object Puzzle {
       }
     }
   }
-  
+
   /**
    * Turns the board into a 2D array
    */
@@ -82,13 +82,13 @@ object Puzzle {
     }
     board.toArray
   }
-  
+
   /**
    * Turns board from options to numbers (None =0)
    */
   def convertBoardToNumbers(board: Seq[Seq[Option[Int]]]): Seq[Seq[Int]] = {
     board.foldLeft(Seq.empty[Seq[Int]]){ (newBoard, row) =>
-      val newRow = row.foldLeft(Seq.empty[Int]) { (nr, numbOpt) => 
+      val newRow = row.foldLeft(Seq.empty[Int]) { (nr, numbOpt) =>
         numbOpt match {
           case Some(numb) => nr :+ numb
           case None => nr :+ 0
@@ -98,8 +98,8 @@ object Puzzle {
     }
   }
 
-  
-def boardToSeq(puzzle: Seq[Seq[Option[Int]]]): IndexedSeq[IndexedSeq[Option[Int]]] = {
+
+  def boardToSeq(puzzle: Seq[Seq[Option[Int]]]): IndexedSeq[IndexedSeq[Option[Int]]] = {
     val board = for {
       row <- puzzle
     } yield {
@@ -107,8 +107,7 @@ def boardToSeq(puzzle: Seq[Seq[Option[Int]]]): IndexedSeq[IndexedSeq[Option[Int]
     }
     board.toIndexedSeq
   }
-}
-  
+
   /**
    * For debugging use
    */
@@ -143,13 +142,13 @@ case class Puzzle(
     difficulty: Option[String] = None,
     size: Option[String] = None,
     board: Seq[Seq[Option[Int]]] = Vector.empty) {
-  
+
   lazy val sizeFromString: Int = {
     val rowSizeOpt = size map(s => s.split("x")(0))
     val rowSize = rowSizeOpt.getOrElse("9")
     rowSize.toInt
   }
-  
+
   /**
    * Helper method for validating a number is between the
    * allowed interval (i.e 1-9)
@@ -162,7 +161,7 @@ case class Puzzle(
     }
     numbers.contains(number)
   }
-  
+
   /**
    * Makes sure that the line does not contain multiple numbers and that
    * all numbers are between the allowed interval, and that the length
@@ -186,34 +185,34 @@ case class Puzzle(
         }
       } && line.length == sizeFromString
   }
- 
+
   /**
    * Validates that a puzzle is solved correctly
    */
   def validateSolution(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
     validateRows(puzzleBoard) && validateColumns(puzzleBoard) && validateSquares(puzzleBoard) && validateInputNumbers(puzzleBoard)
   }
-  
+
   private def validateRows(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
-    puzzleBoard.foldLeft(true){ case (valid, row) => 
+    puzzleBoard.foldLeft(true){ case (valid, row) =>
       validateLine(row, valid)
     }
   }
-  
+
   private def validateColumns(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
     val boardMapInColumns = Puzzle.boardMapToColumns(puzzleBoard)
     boardMapInColumns.foldLeft(true) { case (valid, (cindex, column)) =>
       validateLine(column, valid)
     }
   }
-  
+
   private def validateSquares(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
     val squares = Puzzle.boardMapToSquares(puzzleBoard)
     squares.foldLeft(true) { case (valid, (cindex, column)) =>
       validateLine(column, valid)
     }
   }
-  
+
   private def validateInputNumbers(puzzleBoard: Seq[Seq[Option[Int]]]): Boolean = {
     val solutionMap = Puzzle.boardMapToRowsAndColumns(puzzleBoard)
     val originalMap = Puzzle.boardMapToRowsAndColumns(board)
