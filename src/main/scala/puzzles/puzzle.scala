@@ -97,6 +97,17 @@ object Puzzle {
       newBoard :+ newRow
     }
   }
+
+  
+def boardToSeq(puzzle: Seq[Seq[Option[Int]]]): IndexedSeq[IndexedSeq[Option[Int]]] = {
+    val board = for {
+      row <- puzzle
+    } yield {
+      row.toIndexedSeq
+    }
+    board.toIndexedSeq
+  }
+}
   
   /**
    * For debugging use
