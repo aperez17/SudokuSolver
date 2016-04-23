@@ -1,5 +1,6 @@
 object Run {
   def main(args: Array[String]) = {
+    val BruteForceEngine = SudokuEngine("BruteForce", BruteForce)
     val BackTrackingEngine = SudokuEngine("BackTracking", BackTracker)
     val DancingLinksEngine = SudokuEngine("DancingLinks", DancingLinks)
     println("Run SudokuEngine on all solvers on 9x9")
@@ -9,6 +10,7 @@ object Run {
       } yield {
         SudokuParser.puzzleFromFile(puzzles(puzzleLocation))
       }
+    BruteForceEngine.solve(parsedPuzzles.toSet)
     BackTrackingEngine.solve(parsedPuzzles.toSet)
     DancingLinksEngine.solve(parsedPuzzles.toSet)
     println("DONE")
