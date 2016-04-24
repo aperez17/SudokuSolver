@@ -40,30 +40,34 @@ object BackTracker extends SudokuSolver {
   }
   
   def findUnassignedLocation(board: Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int, size: Int): (Int, Int) = {
-    board(rIndex)(cIndex) match {
-      case Some(number) if(cIndex < size-1)  => findUnassignedLocation(board, rIndex, cIndex+1, size)
-      case Some(number) if(rIndex < size-1)  => findUnassignedLocation(board, rIndex+1, 0, size)
-      case Some(number) if(cIndex == size-1 && rIndex == size-1)=> (-1,-1)//NOT FOUND
-      case None => (rIndex, cIndex)
+    for(i <- 0 to size-1){
+      for(j <- 0 to size-1){
+        if(board(i)(j).isEmpty){
+          return (i, j)
+        }
+      }
     }
+    (-1, -1)
   }
   
+  
   def usedInRow(board: Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int, number: Int, size: Int): Boolean = {
-    board(rIndex)(cIndex) match {
-      case Some(numb) if(cIndex == size-1) => number == numb
-      case Some(numb) => if(numb == number) true else usedInRow(board,rIndex, cIndex + 1, number, size)
-      case None if(cIndex == size-1) => false
-      case None => usedInRow(board, rIndex, cIndex + 1, number, size)
+    val row = board(rIndex)
+    for(i <- 0 to size-1){
+      if(row(i) == Some(number)){
+        return true
+      }
     }
+    false
   }
   
   def usedInColumn(board: Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int, number: Int, size: Int): Boolean = {
-    board(rIndex)(cIndex) match {
-      case Some(numb) if(rIndex == size-1) => number == numb
-      case Some(numb) => if(numb == number) true else usedInColumn(board, rIndex + 1, cIndex, number, size)
-      case None if(rIndex == size-1) => false
-      case None => usedInColumn(board, rIndex + 1, cIndex, number, size)
+    for(i <- 0 to size-1){
+      if(board(i)(cIndex) == Some(number)){
+        return true
+      }
     }
+    false
   }
   
   def usedInBox(board: Seq[Seq[Option[Int]]], boxStartRow: Int, boxStartColumn: Int, number: Int, size: Int): Boolean = {
