@@ -50,7 +50,8 @@ object OptimizedBackTracker extends SudokuSolver {
   
   def updateSquares(board: Seq[Seq[Tracker]], rIndex:Int, cIndex:Int, number:Int): Seq[Seq[Tracker]] = {
     val asSquares = toSquares(board)
-    val squareIndex = findIndex(squares, rIndex, cIndex, number)
+   // val squareIndex = findIndex(squares, rIndex, cIndex, number)
+    board
   }
   
   def finedIndex(squares: Seq[Tracker], rIndex: Int, cIndex: Int, number: Int): Int = {

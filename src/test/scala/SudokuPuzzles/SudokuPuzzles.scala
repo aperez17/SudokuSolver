@@ -8,7 +8,8 @@ object TestSudokuPuzzles {
       "puzzle6, Hard, 9x9" -> "puzzles/puzzle6",
       "puzzle7, Hard, 9x9" -> "puzzles/puzzle7",
       "puzzle8, Easy, 25x25" -> "puzzles/puzzle8",
-      "puzzle9, Hard, 25x25" -> "puzzles/puzzle9")
+      "puzzle9, Medium, 16x16" -> "puzzles/puzzle9",
+      "puzzle10, Hard, 16x16" -> "puzzles/puzzle10")
   lazy val baseLineTest = testCases.getOrElse("puzzle1, Easy, 9x9", "")
 
   val testSolutions = Map(

@@ -21,13 +21,13 @@ case class SudokuEngine(
           println()
           if(puzzle.validateSolution(puzzleSolution)){
             println(s"Solved: ${puzzle.name} ${puzzle.difficulty.getOrElse("")} ${puzzle.size.getOrElse("")}")
-            (println(s"Elapsed time: " + (s1 - s0) + "ns"), s1-s0)
+            (println(s"Elapsed time: " + (s1 - s0)/1000000000.0 + "s"), s1-s0)
           } else {
             (println(s"Failed to solve ${puzzle.name}"), 0L)
           }
         }
       }
     val sum = results.foldLeft(0L){case (total, (unit, time)) => total + time}
-    println("Total Elapsed time: " + sum + "ns")
+    println("Total Elapsed time: " + sum/1000000000.0 + "s")
   }
 }
