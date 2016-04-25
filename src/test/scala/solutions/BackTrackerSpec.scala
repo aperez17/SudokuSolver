@@ -74,6 +74,8 @@ class BackTrackerSpec extends Specification {
       val puzzleSolution = BackTracker.solve(puzzle)
       puzzleSolution.size must_== 9
       puzzle.validateSolution(puzzleSolution) must_== true
+      val puzzleSolved = SudokuParser.puzzleFromFile(TestSudokuPuzzles.baselineSolution)
+      puzzleSolution must_== puzzleSolved.board
     }
   }
 }

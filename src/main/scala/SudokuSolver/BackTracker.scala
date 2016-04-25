@@ -40,12 +40,14 @@ object BackTracker extends SudokuSolver {
   }
   
   def findUnassignedLocation(board: Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int, size: Int): (Int, Int) = {
-    for(i <- 0 to size-1){
-      for(j <- 0 to size-1){
+    var c = cIndex
+    for(i <- rIndex to size-1){
+      for(j <- c to size-1){
         if(board(i)(j).isEmpty){
           return (i, j)
         }
       }
+      c = 0
     }
     (-1, -1)
   }
@@ -72,14 +74,14 @@ object BackTracker extends SudokuSolver {
   
   def usedInBox(board: Seq[Seq[Option[Int]]], boxStartRow: Int, boxStartColumn: Int, number: Int, size: Int): Boolean = {
     val n = Math.sqrt(size).toInt
-    board(boxStartRow)(boxStartColumn) match {
-      case Some(numb) if(boxStartRow%n == n-1) => if(number == numb) true else usedInBox(board, boxStartRow+1-n, boxStartColumn + 1, number, size)
-      case Some(numb) if(boxStartColumn%n == n-1) => number == numb
-      case Some(numb) => if(numb == number) true else usedInBox(board, boxStartRow + 1, boxStartColumn, number, size)
-      case None if(boxStartRow%n == n-1) => usedInBox(board, boxStartRow+1-n, boxStartColumn+1, number, size)
-      case None if(boxStartColumn%n == n-1) => false
-      case None => usedInBox(board, boxStartRow + 1, boxStartColumn, number, size)
+    for(i <- boxStartRow to boxStartRow+n-1){
+      for(j <- boxStartColumn to boxStartColumn+n-1){
+        if(board(i)(j) == Some(number)){
+          return true
+        }
+      }
     }
+    false
   }
   
   def isSafe(board: Seq[Seq[Option[Int]]], rIndex: Int, cIndex: Int, number: Int, size: Int): Boolean = {
