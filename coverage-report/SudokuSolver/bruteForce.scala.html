@@ -1,0 +1,1045 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          SudokuSolver\bruteForce.scala.html
+        </title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>object BruteForce extends SudokuSolver{
+  type Board = IndexedSeq[IndexedSeq[Int]]
+  
+  def solve(puzzle: Puzzle): Seq[Seq[Option[Int]]] = {
+    val asSeq = </span><span style='background: #AEF1AE'>Puzzle.boardToSeq(puzzle.board).map(_.map(_.getOrElse(0)))</span><span style=''>
+    val size = </span><span style='background: #AEF1AE'>asSeq.size</span><span style=''>
+    val s = </span><span style='background: #AEF1AE'>Math.sqrt(size).toInt</span><span style=''>
+    val solution = (</span><span style='background: #AEF1AE'>solveBoard(asSeq, size = size, square = s).getOrElse(</span><span style='background: #F0ADAD'>IndexedSeq.empty[IndexedSeq[Int]]</span><span style='background: #AEF1AE'>)).toSeq</span><span style=''>
+    </span><span style='background: #AEF1AE'>solution.map(_.toSeq.map(Some(_)))</span><span style=''>
+  }
+  
+  def solveBoard(board: Board, cell: Int = 0, size: Int, square: Int): Option[Board] = (cell%size, cell/size) match {
+    case (rIndex, `size`) => </span><span style='background: #AEF1AE'>Some(board)</span><span style=''>
+    case (rIndex, c) if </span><span style='background: #AEF1AE'>board(rIndex)(c) > 0</span><span style=''> => </span><span style='background: #AEF1AE'>solveBoard(board, cell + 1, size, square)</span><span style=''>
+    case (rIndex, c) =>
+      def cells(i: Int) = </span><span style='background: #AEF1AE'>Seq(board(rIndex)(i), board(i)(c), board(square*(rIndex/square) + i/square)(square*(c/square) + i%square))</span><span style=''>
+
+      def tryNumber(x: Int): Option[Board] = </span><span style='background: #AEF1AE'>solveBoard(board.updated(rIndex, board(rIndex).updated(c, x)), cell + 1, size, square)</span><span style=''>
+      val numbers = </span><span style='background: #AEF1AE'>1 to size</span><span style=''>
+      val openNumbers = </span><span style='background: #AEF1AE'>numbers.diff(board.indices.flatMap(cells))</span><span style=''> 
+      </span><span style='background: #AEF1AE'>openNumbers.collectFirst(Function.unlift(tryNumber))</span><span style=''>
+  }
+}
+
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          5
+        </td>
+        <td>
+          490
+        </td>
+        <td>
+          175
+          -
+          187
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.board
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.board
+        </td>
+      </tr><tr>
+        <td>
+          5
+        </td>
+        <td>
+          492
+        </td>
+        <td>
+          198
+          -
+          198
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.IndexedSeq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.IndexedSeq.canBuildFrom[Int]
+        </td>
+      </tr><tr>
+        <td>
+          5
+        </td>
+        <td>
+          495
+        </td>
+        <td>
+          157
+          -
+          215
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          Puzzle.boardToSeq(puzzle.board).map[IndexedSeq[Int], IndexedSeq[IndexedSeq[Int]]](((x$1: IndexedSeq[Option[Int]]) =&gt; x$1.map[Int, IndexedSeq[Int]](((x$2: Option[Int]) =&gt; x$2.getOrElse[Int](0)))(collection.this.IndexedSeq.canBuildFrom[Int])))(collection.this.IndexedSeq.canBuildFrom[IndexedSeq[Int]])
+        </td>
+      </tr><tr>
+        <td>
+          5
+        </td>
+        <td>
+          491
+        </td>
+        <td>
+          199
+          -
+          213
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.getOrElse
+        </td>
+        <td style="background: #AEF1AE">
+          x$2.getOrElse[Int](0)
+        </td>
+      </tr><tr>
+        <td>
+          5
+        </td>
+        <td>
+          494
+        </td>
+        <td>
+          192
+          -
+          192
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.IndexedSeq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.IndexedSeq.canBuildFrom[IndexedSeq[Int]]
+        </td>
+      </tr><tr>
+        <td>
+          5
+        </td>
+        <td>
+          493
+        </td>
+        <td>
+          193
+          -
+          214
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.map[Int, IndexedSeq[Int]](((x$2: Option[Int]) =&gt; x$2.getOrElse[Int](0)))(collection.this.IndexedSeq.canBuildFrom[Int])
+        </td>
+      </tr><tr>
+        <td>
+          6
+        </td>
+        <td>
+          496
+        </td>
+        <td>
+          231
+          -
+          241
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td style="background: #AEF1AE">
+          asSeq.size
+        </td>
+      </tr><tr>
+        <td>
+          7
+        </td>
+        <td>
+          498
+        </td>
+        <td>
+          254
+          -
+          275
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Math.sqrt(size.toDouble).toInt
+        </td>
+      </tr><tr>
+        <td>
+          7
+        </td>
+        <td>
+          497
+        </td>
+        <td>
+          264
+          -
+          268
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toDouble
+        </td>
+        <td style="background: #AEF1AE">
+          size.toDouble
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          499
+        </td>
+        <td>
+          296
+          -
+          296
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          BruteForce.solveBoard$default$2
+        </td>
+        <td style="background: #AEF1AE">
+          BruteForce.this.solveBoard$default$2
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          501
+        </td>
+        <td>
+          349
+          -
+          382
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.generic.GenericCompanion.empty
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.IndexedSeq.empty[IndexedSeq[Int]]
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          500
+        </td>
+        <td>
+          296
+          -
+          338
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          BruteForce.solveBoard
+        </td>
+        <td style="background: #AEF1AE">
+          BruteForce.this.solveBoard(x$5, x$8, x$6, x$7)
+        </td>
+      </tr><tr>
+        <td>
+          8
+        </td>
+        <td>
+          502
+        </td>
+        <td>
+          296
+          -
+          390
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.toSeq
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  &lt;artifact&gt; val x$5: IndexedSeq[IndexedSeq[Int]] = asSeq;
+  &lt;artifact&gt; val x$6: Int = size;
+  &lt;artifact&gt; val x$7: Int = s;
+  &lt;artifact&gt; val x$8: Int = BruteForce.this.solveBoard$default$2;
+  BruteForce.this.solveBoard(x$5, x$8, x$6, x$7)
+}.getOrElse[BruteForce.Board](scala.`package`.IndexedSeq.empty[IndexedSeq[Int]]).toSeq
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          505
+        </td>
+        <td>
+          408
+          -
+          428
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          x$3.toSeq.map[Some[Int], Seq[Some[Int]]](((x$4: Int) =&gt; scala.Some.apply[Int](x$4)))(collection.this.Seq.canBuildFrom[Some[Int]])
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          507
+        </td>
+        <td>
+          395
+          -
+          429
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          solution.map[Seq[Some[Int]], Seq[Seq[Option[Int]]]](((x$3: IndexedSeq[Int]) =&gt; x$3.toSeq.map[Some[Int], Seq[Some[Int]]](((x$4: Int) =&gt; scala.Some.apply[Int](x$4)))(collection.this.Seq.canBuildFrom[Some[Int]])))(collection.this.Seq.canBuildFrom[Seq[Some[Int]]])
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          504
+        </td>
+        <td>
+          419
+          -
+          419
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[Some[Int]]
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          503
+        </td>
+        <td>
+          420
+          -
+          427
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[Int](x$4)
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          506
+        </td>
+        <td>
+          407
+          -
+          407
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[Seq[Some[Int]]]
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          508
+        </td>
+        <td>
+          584
+          -
+          595
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[BruteForce.Board](board)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          510
+        </td>
+        <td>
+          662
+          -
+          670
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          cell.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          509
+        </td>
+        <td>
+          620
+          -
+          640
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          board.apply(rIndex).apply(c).&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          511
+        </td>
+        <td>
+          644
+          -
+          685
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          BruteForce.solveBoard
+        </td>
+        <td style="background: #AEF1AE">
+          BruteForce.this.solveBoard(board, cell.+(1), size, square)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          514
+        </td>
+        <td>
+          785
+          -
+          798
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          rIndex./(square)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          517
+        </td>
+        <td>
+          820
+          -
+          828
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          c./(square)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          516
+        </td>
+        <td>
+          777
+          -
+          810
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          square.*(rIndex./(square)).+(i./(square))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          519
+        </td>
+        <td>
+          812
+          -
+          840
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          square.*(c./(square)).+(i.%(square))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          513
+        </td>
+        <td>
+          758
+          -
+          769
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.apply
+        </td>
+        <td style="background: #AEF1AE">
+          board.apply(i).apply(c)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          521
+        </td>
+        <td>
+          736
+          -
+          842
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenericCompanion.apply
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.apply[Int](board.apply(rIndex).apply(i), board.apply(i).apply(c), board.apply(square.*(rIndex./(square)).+(i./(square))).apply(square.*(c./(square)).+(i.%(square))))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          512
+        </td>
+        <td>
+          740
+          -
+          756
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.apply
+        </td>
+        <td style="background: #AEF1AE">
+          board.apply(rIndex).apply(i)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          515
+        </td>
+        <td>
+          802
+          -
+          810
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          i./(square)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          518
+        </td>
+        <td>
+          832
+          -
+          840
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.%
+        </td>
+        <td style="background: #AEF1AE">
+          i.%(square)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          520
+        </td>
+        <td>
+          771
+          -
+          841
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.apply
+        </td>
+        <td style="background: #AEF1AE">
+          board.apply(square.*(rIndex./(square)).+(i./(square))).apply(square.*(c./(square)).+(i.%(square)))
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          523
+        </td>
+        <td>
+          922
+          -
+          949
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.updated
+        </td>
+        <td style="background: #AEF1AE">
+          board.apply(rIndex).updated[Int, IndexedSeq[Int]](c, x)(collection.this.IndexedSeq.canBuildFrom[Int])
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          525
+        </td>
+        <td>
+          900
+          -
+          950
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.updated
+        </td>
+        <td style="background: #AEF1AE">
+          board.updated[IndexedSeq[Int], BruteForce.Board](rIndex, board.apply(rIndex).updated[Int, IndexedSeq[Int]](c, x)(collection.this.IndexedSeq.canBuildFrom[Int]))(collection.this.IndexedSeq.canBuildFrom[IndexedSeq[Int]])
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          522
+        </td>
+        <td>
+          943
+          -
+          943
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.IndexedSeq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.IndexedSeq.canBuildFrom[Int]
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          524
+        </td>
+        <td>
+          913
+          -
+          913
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.IndexedSeq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.IndexedSeq.canBuildFrom[IndexedSeq[Int]]
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          527
+        </td>
+        <td>
+          889
+          -
+          975
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          BruteForce.solveBoard
+        </td>
+        <td style="background: #AEF1AE">
+          BruteForce.this.solveBoard(board.updated[IndexedSeq[Int], BruteForce.Board](rIndex, board.apply(rIndex).updated[Int, IndexedSeq[Int]](c, x)(collection.this.IndexedSeq.canBuildFrom[Int]))(collection.this.IndexedSeq.canBuildFrom[IndexedSeq[Int]]), cell.+(1), size, square)
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          526
+        </td>
+        <td>
+          952
+          -
+          960
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          cell.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          528
+        </td>
+        <td>
+          996
+          -
+          1005
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.runtime.RichInt.to
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(1).to(size)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          532
+        </td>
+        <td>
+          1030
+          -
+          1072
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.diff
+        </td>
+        <td style="background: #AEF1AE">
+          numbers.diff[Int](board.indices.flatMap[Int, scala.collection.immutable.IndexedSeq[Int]]({
+  ((i: Int) =&gt; cells(i))
+})(immutable.this.IndexedSeq.canBuildFrom[Int]))
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          531
+        </td>
+        <td>
+          1043
+          -
+          1071
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.flatMap
+        </td>
+        <td style="background: #AEF1AE">
+          board.indices.flatMap[Int, scala.collection.immutable.IndexedSeq[Int]]({
+  ((i: Int) =&gt; cells(i))
+})(immutable.this.IndexedSeq.canBuildFrom[Int])
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          530
+        </td>
+        <td>
+          1064
+          -
+          1064
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.IndexedSeq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.IndexedSeq.canBuildFrom[Int]
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          529
+        </td>
+        <td>
+          1065
+          -
+          1070
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          BruteForce.cells
+        </td>
+        <td style="background: #AEF1AE">
+          cells(i)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          534
+        </td>
+        <td>
+          1105
+          -
+          1131
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Function.unlift
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Function.unlift[Int, BruteForce.Board]({
+  ((x: Int) =&gt; tryNumber(x))
+})
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          533
+        </td>
+        <td>
+          1121
+          -
+          1130
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          BruteForce.tryNumber
+        </td>
+        <td style="background: #AEF1AE">
+          tryNumber(x)
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          535
+        </td>
+        <td>
+          1080
+          -
+          1132
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.TraversableOnce.collectFirst
+        </td>
+        <td style="background: #AEF1AE">
+          openNumbers.collectFirst[BruteForce.Board](scala.Function.unlift[Int, BruteForce.Board]({
+  ((x: Int) =&gt; tryNumber(x))
+}))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

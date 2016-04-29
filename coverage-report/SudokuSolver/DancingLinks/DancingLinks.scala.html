@@ -1,0 +1,2711 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          SudokuSolver\DancingLinks\DancingLinks.scala.html
+        </title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>object DancingLinks extends SudokuSolver {
+  def solve(puzzle: Puzzle):Seq[Seq[Option[Int]]] = {
+    val links = </span><span style='background: #AEF1AE'>new DancingLinks(puzzle.board.size)</span><span style=''>
+    </span><span style='background: #AEF1AE'>links.solve(puzzle)</span><span style=''>
+  }
+}
+
+class DancingLinks(size: Int) {
+  lazy val parts = </span><span style='background: #AEF1AE'>Math.sqrt(size).toInt</span><span style=''>
+  
+  def solve(puzzle: Puzzle): Seq[Seq[Option[Int]]] = {
+    val matrix = </span><span style='background: #AEF1AE'>convertPuzzleToConstraintMatrix(Puzzle.convertBoardToNumbers(puzzle.board))</span><span style=''>
+    val result = </span><span style='background: #AEF1AE'>AlgorithmX.solve(matrix)</span><span style=''>
+    if(</span><span style='background: #AEF1AE'>result.success</span><span style=''>)
+    {
+      </span><span style='background: #AEF1AE'>convertSolvedMatrixToPuzzle(result.rowIds).map(_.map(Some(_)).toSeq).toSeq</span><span style=''>
+    }
+    else </span><span style='background: #F0ADAD'>{
+      throw new RuntimeException("no valid solutions exist")
+      puzzle.board
+    }</span><span style=''>
+  }
+  
+  // constrained array column structure: (9*9*4 columns total)
+  // 
+  // 1. Row-Column constraints R1C1 ... R1C9, ...., R9C1 ... R9C9 (9*9 columns)
+  // 2. Row-number R1#1, R1#2 ... R1#9, ... , R9#1, ... R9#9 (9*9 columns)
+  // 3. Column-number C1#1, C1#2 ... C1#9, ... , C9#1, ... C9#9 (9*9 columns)
+  // 4. Box-number B1#1, B1#2 ... B1#9, ... , B9#1, ... B9#9 (9*9 columns)
+  
+  // rows:
+  // R1C1#1, R1C1#2 ..., R1C1#9, R1C2#1, ... R1C2#9, ...., R1C9#1, ... R9C9#9
+  // (9*9*9 columns total)
+  
+  private def convertPuzzleToConstraintMatrix(puzzle : Seq[Seq[Int]]) = {
+    if(</span><span style='background: #AEF1AE'>size != puzzle.size</span><span style=''>) </span><span style='background: #F0ADAD'>throw new RuntimeException("puzzle size does not match solver configured size")</span><span style=''>
+    var rows = </span><span style='background: #AEF1AE'>List[Row]()</span><span style=''>
+    </span><span style='background: #AEF1AE'>for(r <- 0 to size-1) {
+      for (c <- 0 to size-1) {
+        val b = getBoxForRowColumn(r,c)
+        val constrainedNumber = puzzle(r)(c)
+        if(constrainedNumber > 0) {
+          // add constraints for number
+          val constraintRow = createConstraintRow(r,c,constrainedNumber)
+          // put row number constraint
+          addNumberConstraint(constraintRow, r,c,b,constrainedNumber)
+          addRowColumnCondition(constraintRow, r,c,constrainedNumber)
+          
+          rows = constraintRow :: rows
+        } else {
+          // add all possible number values for square
+          for(possibleNumber <- 1 to size) {
+            val constraintRow = createConstraintRow(r,c,possibleNumber)
+            addNumberConstraint(constraintRow, r,c,b,possibleNumber)
+            addRowColumnCondition(constraintRow, r,c,possibleNumber)
+            
+            rows = constraintRow :: rows
+          }
+        }
+      }</span><span style=''>
+    }
+    
+     </span><span style='background: #AEF1AE'>new CircularLinkedMatrix(rows.map{ row => (row.idx, row)}.toMap)</span><span style=''>
+  }
+  
+  private def getBoxForRowColumn(r: Int, c: Int) = {
+    val row = (</span><span style='background: #AEF1AE'>r / parts</span><span style=''>)
+    val col = (</span><span style='background: #AEF1AE'>c / parts</span><span style=''>)
+    </span><span style='background: #AEF1AE'>row*parts + col</span><span style=''>
+  }
+  
+  private def createConstraintRow(puzzleRow: Int, puzzleColumn: Int, number: Int) = {
+    val rowId = </span><span style='background: #AEF1AE'>puzzleRow*size*size+puzzleColumn*size+(number-1)</span><span style=''>
+    val constraintRow = </span><span style='background: #AEF1AE'>Array.ofDim[Int](size*size*4)</span><span style=''>
+    val row = </span><span style='background: #AEF1AE'>new Row(rowId, constraintRow)</span><span style=''>
+    </span><span style='background: #AEF1AE'>addColumnNumberConstraint(row, puzzleColumn, number)</span><span style=''>
+    
+    row
+  }
+  
+  private def addNumberConstraint(constraintRow: Row, puzzleRow: Int, puzzleColumn: Int, puzzleBox: Int, number: Int) = {
+    </span><span style='background: #AEF1AE'>addRowNumberConstraint(constraintRow, puzzleRow, number)</span><span style=''>
+    </span><span style='background: #AEF1AE'>addColumnNumberConstraint(constraintRow, puzzleColumn, number)</span><span style=''>
+    </span><span style='background: #AEF1AE'>addBoxNumberConstraint(constraintRow, puzzleBox, number)</span><span style=''>
+  }
+  
+  private def addRowColumnCondition(constraintRow: Row, puzzleRow: Int, puzzleColumn: Int, number: Int) = {
+    </span><span style='background: #AEF1AE'>constraintRow.cells(0*size*size + size*puzzleRow + puzzleColumn) = 1</span><span style=''>
+  }
+  
+  private def addRowNumberConstraint(constraintRow: Row, puzzleRow: Int, number: Int) = {
+    </span><span style='background: #AEF1AE'>constraintRow.cells(1*size*size + size*puzzleRow + (number-1)) = 1</span><span style=''>
+  }
+  
+  private def addColumnNumberConstraint(constraintRow: Row, puzzleColumn: Int, number: Int) = {
+    </span><span style='background: #AEF1AE'>constraintRow.cells(2*size*size + size*puzzleColumn + (number-1)) = 1</span><span style=''>
+  }
+  
+  private def addBoxNumberConstraint(constraintRow: Row, puzzleBox: Int, number: Int) = {
+    </span><span style='background: #AEF1AE'>constraintRow.cells(3*size*size + size*puzzleBox + (number-1)) = 1</span><span style=''>
+  }
+  
+  private def convertSolvedMatrixToPuzzle(rowIds: List[Int]) = {
+    val a = </span><span style='background: #AEF1AE'>Array.ofDim[Int](size,size)</span><span style=''>
+    </span><span style='background: #AEF1AE'>for(id <- rowIds) {
+      val r = id / (size*size)
+      val c = (id % (size*size)) / size 
+      val n = (id % (size*size)) % size
+      
+      a(r)(c) = n+1
+    }</span><span style=''>
+    a
+  }
+}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          3
+        </td>
+        <td>
+          373
+        </td>
+        <td>
+          113
+          -
+          148
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new DancingLinks(puzzle.board.size)
+        </td>
+      </tr><tr>
+        <td>
+          3
+        </td>
+        <td>
+          372
+        </td>
+        <td>
+          130
+          -
+          147
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.board.size
+        </td>
+      </tr><tr>
+        <td>
+          4
+        </td>
+        <td>
+          374
+        </td>
+        <td>
+          153
+          -
+          172
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.solve
+        </td>
+        <td style="background: #AEF1AE">
+          links.solve(puzzle)
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          376
+        </td>
+        <td>
+          231
+          -
+          252
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Double.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          java.this.lang.Math.sqrt(DancingLinks.this.size.toDouble).toInt
+        </td>
+      </tr><tr>
+        <td>
+          9
+        </td>
+        <td>
+          375
+        </td>
+        <td>
+          241
+          -
+          245
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Int.toDouble
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.toDouble
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          379
+        </td>
+        <td>
+          328
+          -
+          403
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.convertPuzzleToConstraintMatrix
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.convertPuzzleToConstraintMatrix(Puzzle.convertBoardToNumbers(puzzle.board))
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          378
+        </td>
+        <td>
+          360
+          -
+          402
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Puzzle.convertBoardToNumbers
+        </td>
+        <td style="background: #AEF1AE">
+          Puzzle.convertBoardToNumbers(puzzle.board)
+        </td>
+      </tr><tr>
+        <td>
+          12
+        </td>
+        <td>
+          377
+        </td>
+        <td>
+          389
+          -
+          401
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.board
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.board
+        </td>
+      </tr><tr>
+        <td>
+          13
+        </td>
+        <td>
+          380
+        </td>
+        <td>
+          421
+          -
+          445
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          AlgorithmX.solve
+        </td>
+        <td style="background: #AEF1AE">
+          AlgorithmX.solve(matrix)
+        </td>
+      </tr><tr>
+        <td>
+          14
+        </td>
+        <td>
+          381
+        </td>
+        <td>
+          453
+          -
+          467
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Result.success
+        </td>
+        <td style="background: #AEF1AE">
+          result.success
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          391
+        </td>
+        <td>
+          481
+          -
+          555
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.SeqLike.toSeq
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.refArrayOps[Seq[Some[Int]]](scala.this.Predef.refArrayOps[Array[Int]](DancingLinks.this.convertSolvedMatrixToPuzzle(result.rowIds)).map[Seq[Some[Int]], Array[Seq[Some[Int]]]](((x$1: Array[Int]) =&gt; scala.this.Predef.refArrayOps[Some[Int]](scala.this.Predef.intArrayOps(x$1).map[Some[Int], Array[Some[Int]]](((x$2: Int) =&gt; scala.Some.apply[Int](x$2)))(scala.this.Array.canBuildFrom[Some[Int]]((ClassTag.apply[Some[Int]](classOf[scala.Some]): scala.reflect.ClassTag[Some[Int]])))).toSeq))(scala.this.Array.canBuildFrom[Seq[Some[Int]]]((ClassTag.apply[Seq[Some[Int]]](classOf[scala.collection.Seq]): scala.reflect.ClassTag[Seq[Some[Int]]])))).toSeq
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          382
+        </td>
+        <td>
+          509
+          -
+          522
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Result.rowIds
+        </td>
+        <td style="background: #AEF1AE">
+          result.rowIds
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          385
+        </td>
+        <td>
+          533
+          -
+          533
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[Some[Int]]((ClassTag.apply[Some[Int]](classOf[scala.Some]): scala.reflect.ClassTag[Some[Int]]))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          388
+        </td>
+        <td>
+          527
+          -
+          527
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[Seq[Some[Int]]]((ClassTag.apply[Seq[Some[Int]]](classOf[scala.collection.Seq]): scala.reflect.ClassTag[Seq[Some[Int]]]))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          387
+        </td>
+        <td>
+          528
+          -
+          548
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.toSeq
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.refArrayOps[Some[Int]](scala.this.Predef.intArrayOps(x$1).map[Some[Int], Array[Some[Int]]](((x$2: Int) =&gt; scala.Some.apply[Int](x$2)))(scala.this.Array.canBuildFrom[Some[Int]]((ClassTag.apply[Some[Int]](classOf[scala.Some]): scala.reflect.ClassTag[Some[Int]])))).toSeq
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          390
+        </td>
+        <td>
+          481
+          -
+          555
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.toSeq
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.refArrayOps[Seq[Some[Int]]](scala.this.Predef.refArrayOps[Array[Int]](DancingLinks.this.convertSolvedMatrixToPuzzle(result.rowIds)).map[Seq[Some[Int]], Array[Seq[Some[Int]]]](((x$1: Array[Int]) =&gt; scala.this.Predef.refArrayOps[Some[Int]](scala.this.Predef.intArrayOps(x$1).map[Some[Int], Array[Some[Int]]](((x$2: Int) =&gt; scala.Some.apply[Int](x$2)))(scala.this.Array.canBuildFrom[Some[Int]]((ClassTag.apply[Some[Int]](classOf[scala.Some]): scala.reflect.ClassTag[Some[Int]])))).toSeq))(scala.this.Array.canBuildFrom[Seq[Some[Int]]]((ClassTag.apply[Seq[Some[Int]]](classOf[scala.collection.Seq]): scala.reflect.ClassTag[Seq[Some[Int]]])))).toSeq
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          384
+        </td>
+        <td>
+          534
+          -
+          541
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[Int](x$2)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          383
+        </td>
+        <td>
+          481
+          -
+          523
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.convertSolvedMatrixToPuzzle
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.convertSolvedMatrixToPuzzle(result.rowIds)
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          386
+        </td>
+        <td>
+          528
+          -
+          542
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intArrayOps(x$1).map[Some[Int], Array[Some[Int]]](((x$2: Int) =&gt; scala.Some.apply[Int](x$2)))(scala.this.Array.canBuildFrom[Some[Int]]((ClassTag.apply[Some[Int]](classOf[scala.Some]): scala.reflect.ClassTag[Some[Int]])))
+        </td>
+      </tr><tr>
+        <td>
+          16
+        </td>
+        <td>
+          389
+        </td>
+        <td>
+          481
+          -
+          549
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.refArrayOps[Array[Int]](DancingLinks.this.convertSolvedMatrixToPuzzle(result.rowIds)).map[Seq[Some[Int]], Array[Seq[Some[Int]]]](((x$1: Array[Int]) =&gt; scala.this.Predef.refArrayOps[Some[Int]](scala.this.Predef.intArrayOps(x$1).map[Some[Int], Array[Some[Int]]](((x$2: Int) =&gt; scala.Some.apply[Int](x$2)))(scala.this.Array.canBuildFrom[Some[Int]]((ClassTag.apply[Some[Int]](classOf[scala.Some]): scala.reflect.ClassTag[Some[Int]])))).toSeq))(scala.this.Array.canBuildFrom[Seq[Some[Int]]]((ClassTag.apply[Seq[Some[Int]]](classOf[scala.collection.Seq]): scala.reflect.ClassTag[Seq[Some[Int]]])))
+        </td>
+      </tr><tr>
+        <td>
+          18
+        </td>
+        <td>
+          394
+        </td>
+        <td>
+          571
+          -
+          658
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  throw new scala.`package`.RuntimeException(&quot;no valid solutions exist&quot;);
+  puzzle.board
+}
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          392
+        </td>
+        <td>
+          579
+          -
+          633
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.RuntimeException(&quot;no valid solutions exist&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          393
+        </td>
+        <td>
+          640
+          -
+          652
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.board
+        </td>
+        <td style="background: #F0ADAD">
+          puzzle.board
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          400
+        </td>
+        <td>
+          1243
+          -
+          1243
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          397
+        </td>
+        <td>
+          1267
+          -
+          1346
+        </td>
+        <td>
+          Throw
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.RuntimeException(&quot;puzzle size does not match solver configured size&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          396
+        </td>
+        <td>
+          1246
+          -
+          1265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.!=
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.!=(puzzle.size)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          399
+        </td>
+        <td>
+          1243
+          -
+          1243
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          395
+        </td>
+        <td>
+          1254
+          -
+          1265
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.size
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          398
+        </td>
+        <td>
+          1267
+          -
+          1346
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          throw new scala.`package`.RuntimeException(&quot;puzzle size does not match solver configured size&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          401
+        </td>
+        <td>
+          1362
+          -
+          1373
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.Nil
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          403
+        </td>
+        <td>
+          1392
+          -
+          1398
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          423
+        </td>
+        <td>
+          1378
+          -
+          2306
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(0).to(DancingLinks.this.size.-(1)).foreach[Unit](((r: Int) =&gt; scala.this.Predef.intWrapper(0).to(DancingLinks.this.size.-(1)).foreach[Unit](((c: Int) =&gt; {
+  val b: Int = DancingLinks.this.getBoxForRowColumn(r, c);
+  val constrainedNumber: Int = puzzle.apply(r).apply(c);
+  if (constrainedNumber.&gt;(0))
+    {
+      val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, constrainedNumber);
+      DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, constrainedNumber);
+      DancingLinks.this.addRowColumnCondition(constraintRow, r, c, constrainedNumber);
+      rows = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$3: Row = constraintRow;
+        rows.::[Row](x$3)
+      }
+    }
+  else
+    scala.this.Predef.intWrapper(1).to(DancingLinks.this.size).foreach[Unit](((possibleNumber: Int) =&gt; {
+      val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, possibleNumber);
+      DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, possibleNumber);
+      DancingLinks.this.addRowColumnCondition(constraintRow, r, c, possibleNumber);
+      rows = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$4: Row = constraintRow;
+        rows.::[Row](x$4)
+      }
+    }))
+}))))
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          402
+        </td>
+        <td>
+          1387
+          -
+          1388
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          405
+        </td>
+        <td>
+          1423
+          -
+          1429
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          404
+        </td>
+        <td>
+          1418
+          -
+          1419
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          422
+        </td>
+        <td>
+          1408
+          -
+          2306
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(0).to(DancingLinks.this.size.-(1)).foreach[Unit](((c: Int) =&gt; {
+  val b: Int = DancingLinks.this.getBoxForRowColumn(r, c);
+  val constrainedNumber: Int = puzzle.apply(r).apply(c);
+  if (constrainedNumber.&gt;(0))
+    {
+      val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, constrainedNumber);
+      DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, constrainedNumber);
+      DancingLinks.this.addRowColumnCondition(constraintRow, r, c, constrainedNumber);
+      rows = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$3: Row = constraintRow;
+        rows.::[Row](x$3)
+      }
+    }
+  else
+    scala.this.Predef.intWrapper(1).to(DancingLinks.this.size).foreach[Unit](((possibleNumber: Int) =&gt; {
+      val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, possibleNumber);
+      DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, possibleNumber);
+      DancingLinks.this.addRowColumnCondition(constraintRow, r, c, possibleNumber);
+      rows = {
+        &lt;synthetic&gt; &lt;artifact&gt; val x$4: Row = constraintRow;
+        rows.::[Row](x$4)
+      }
+    }))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          406
+        </td>
+        <td>
+          1449
+          -
+          1472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.getBoxForRowColumn
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.getBoxForRowColumn(r, c)
+        </td>
+      </tr><tr>
+        <td>
+          41
+        </td>
+        <td>
+          407
+        </td>
+        <td>
+          1505
+          -
+          1517
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.apply
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.apply(r).apply(c)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          408
+        </td>
+        <td>
+          1529
+          -
+          1550
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          constrainedNumber.&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          413
+        </td>
+        <td>
+          1552
+          -
+          1905
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, constrainedNumber);
+  DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, constrainedNumber);
+  DancingLinks.this.addRowColumnCondition(constraintRow, r, c, constrainedNumber);
+  rows = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$3: Row = constraintRow;
+    rows.::[Row](x$3)
+  }
+}
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          409
+        </td>
+        <td>
+          1624
+          -
+          1666
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.createConstraintRow
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.createConstraintRow(r, c, constrainedNumber)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          410
+        </td>
+        <td>
+          1716
+          -
+          1775
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addNumberConstraint
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, constrainedNumber)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          411
+        </td>
+        <td>
+          1786
+          -
+          1845
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addRowColumnCondition
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addRowColumnCondition(constraintRow, r, c, constrainedNumber)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          412
+        </td>
+        <td>
+          1888
+          -
+          1895
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td style="background: #AEF1AE">
+          rows.::[Row](x$3)
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          415
+        </td>
+        <td>
+          2005
+          -
+          2009
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          421
+        </td>
+        <td>
+          1978
+          -
+          2288
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(1).to(DancingLinks.this.size).foreach[Unit](((possibleNumber: Int) =&gt; {
+  val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, possibleNumber);
+  DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, possibleNumber);
+  DancingLinks.this.addRowColumnCondition(constraintRow, r, c, possibleNumber);
+  rows = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$4: Row = constraintRow;
+    rows.::[Row](x$4)
+  }
+}))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          420
+        </td>
+        <td>
+          1978
+          -
+          2288
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(1).to(DancingLinks.this.size).foreach[Unit](((possibleNumber: Int) =&gt; {
+  val constraintRow: Row = DancingLinks.this.createConstraintRow(r, c, possibleNumber);
+  DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, possibleNumber);
+  DancingLinks.this.addRowColumnCondition(constraintRow, r, c, possibleNumber);
+  rows = {
+    &lt;synthetic&gt; &lt;artifact&gt; val x$4: Row = constraintRow;
+    rows.::[Row](x$4)
+  }
+}))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          414
+        </td>
+        <td>
+          2000
+          -
+          2001
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          416
+        </td>
+        <td>
+          2045
+          -
+          2084
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.createConstraintRow
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.createConstraintRow(r, c, possibleNumber)
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          417
+        </td>
+        <td>
+          2097
+          -
+          2153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addNumberConstraint
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addNumberConstraint(constraintRow, r, c, b, possibleNumber)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          418
+        </td>
+        <td>
+          2166
+          -
+          2222
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addRowColumnCondition
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addRowColumnCondition(constraintRow, r, c, possibleNumber)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          419
+        </td>
+        <td>
+          2269
+          -
+          2276
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.::
+        </td>
+        <td style="background: #AEF1AE">
+          rows.::[Row](x$4)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          424
+        </td>
+        <td>
+          2366
+          -
+          2373
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Row.idx
+        </td>
+        <td style="background: #AEF1AE">
+          row.idx
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          427
+        </td>
+        <td>
+          2381
+          -
+          2381
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Predef.$conforms
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.$conforms[(Int, Row)]
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          429
+        </td>
+        <td>
+          2323
+          -
+          2387
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          CircularLinkedMatrix.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new CircularLinkedMatrix(rows.map[(Int, Row), List[(Int, Row)]](((row: Row) =&gt; scala.Tuple2.apply[Int, Row](row.idx, row)))(immutable.this.List.canBuildFrom[(Int, Row)]).toMap[Int, Row](scala.this.Predef.$conforms[(Int, Row)]))
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          426
+        </td>
+        <td>
+          2356
+          -
+          2356
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[(Int, Row)]
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          428
+        </td>
+        <td>
+          2348
+          -
+          2386
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toMap
+        </td>
+        <td style="background: #AEF1AE">
+          rows.map[(Int, Row), List[(Int, Row)]](((row: Row) =&gt; scala.Tuple2.apply[Int, Row](row.idx, row)))(immutable.this.List.canBuildFrom[(Int, Row)]).toMap[Int, Row](scala.this.Predef.$conforms[(Int, Row)])
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          425
+        </td>
+        <td>
+          2365
+          -
+          2379
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Int, Row](row.idx, row)
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          430
+        </td>
+        <td>
+          2463
+          -
+          2472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          r./(DancingLinks.this.parts)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          431
+        </td>
+        <td>
+          2489
+          -
+          2498
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          c./(DancingLinks.this.parts)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          432
+        </td>
+        <td>
+          2504
+          -
+          2519
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          row.*(DancingLinks.this.parts).+(col)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          433
+        </td>
+        <td>
+          2639
+          -
+          2643
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          436
+        </td>
+        <td>
+          2649
+          -
+          2666
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          puzzleColumn.*(DancingLinks.this.size)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          438
+        </td>
+        <td>
+          2629
+          -
+          2677
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          puzzleRow.*(DancingLinks.this.size).*(DancingLinks.this.size).+(puzzleColumn.*(DancingLinks.this.size)).+(number.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          435
+        </td>
+        <td>
+          2662
+          -
+          2666
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          437
+        </td>
+        <td>
+          2668
+          -
+          2676
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          number.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          434
+        </td>
+        <td>
+          2644
+          -
+          2648
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          439
+        </td>
+        <td>
+          2719
+          -
+          2730
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(DancingLinks.this.size).*(4)
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          440
+        </td>
+        <td>
+          2702
+          -
+          2731
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.ofDim
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Array.ofDim[Int](DancingLinks.this.size.*(DancingLinks.this.size).*(4))((ClassTag.Int: scala.reflect.ClassTag[Int]))
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          441
+        </td>
+        <td>
+          2746
+          -
+          2775
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Row.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new Row(rowId, constraintRow)
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          442
+        </td>
+        <td>
+          2780
+          -
+          2832
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addColumnNumberConstraint
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addColumnNumberConstraint(row, puzzleColumn, number)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          443
+        </td>
+        <td>
+          2979
+          -
+          3035
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addRowNumberConstraint
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addRowNumberConstraint(constraintRow, puzzleRow, number)
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          444
+        </td>
+        <td>
+          3040
+          -
+          3102
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addColumnNumberConstraint
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addColumnNumberConstraint(constraintRow, puzzleColumn, number)
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          445
+        </td>
+        <td>
+          3107
+          -
+          3163
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          DancingLinks.addBoxNumberConstraint
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.addBoxNumberConstraint(constraintRow, puzzleBox, number)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          448
+        </td>
+        <td>
+          3283
+          -
+          3351
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.update
+        </td>
+        <td style="background: #AEF1AE">
+          constraintRow.cells.update(0.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleRow)).+(puzzleColumn), 1)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          447
+        </td>
+        <td>
+          3350
+          -
+          3351
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          446
+        </td>
+        <td>
+          3303
+          -
+          3346
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          0.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleRow)).+(puzzleColumn)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          451
+        </td>
+        <td>
+          3480
+          -
+          3484
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          454
+        </td>
+        <td>
+          3473
+          -
+          3514
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          1.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleRow)).+(number.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          456
+        </td>
+        <td>
+          3453
+          -
+          3519
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.update
+        </td>
+        <td style="background: #AEF1AE">
+          constraintRow.cells.update(1.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleRow)).+(number.-(1)), 1)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          450
+        </td>
+        <td>
+          3475
+          -
+          3479
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          453
+        </td>
+        <td>
+          3505
+          -
+          3513
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          number.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          452
+        </td>
+        <td>
+          3487
+          -
+          3501
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(puzzleRow)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          455
+        </td>
+        <td>
+          3518
+          -
+          3519
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          449
+        </td>
+        <td>
+          3473
+          -
+          3474
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          460
+        </td>
+        <td>
+          3661
+          -
+          3678
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(puzzleColumn)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          463
+        </td>
+        <td>
+          3695
+          -
+          3696
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          457
+        </td>
+        <td>
+          3647
+          -
+          3648
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          459
+        </td>
+        <td>
+          3654
+          -
+          3658
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          462
+        </td>
+        <td>
+          3647
+          -
+          3691
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          2.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleColumn)).+(number.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          461
+        </td>
+        <td>
+          3682
+          -
+          3690
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          number.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          464
+        </td>
+        <td>
+          3627
+          -
+          3696
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.update
+        </td>
+        <td style="background: #AEF1AE">
+          constraintRow.cells.update(2.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleColumn)).+(number.-(1)), 1)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          458
+        </td>
+        <td>
+          3649
+          -
+          3653
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          469
+        </td>
+        <td>
+          3850
+          -
+          3858
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          number.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          472
+        </td>
+        <td>
+          3798
+          -
+          3864
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.update
+        </td>
+        <td style="background: #AEF1AE">
+          constraintRow.cells.update(3.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleBox)).+(number.-(1)), 1)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          465
+        </td>
+        <td>
+          3818
+          -
+          3819
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          3
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          468
+        </td>
+        <td>
+          3832
+          -
+          3846
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(puzzleBox)
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          471
+        </td>
+        <td>
+          3863
+          -
+          3864
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          1
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          470
+        </td>
+        <td>
+          3818
+          -
+          3859
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          3.*(DancingLinks.this.size).*(DancingLinks.this.size).+(DancingLinks.this.size.*(puzzleBox)).+(number.-(1))
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          467
+        </td>
+        <td>
+          3825
+          -
+          3829
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          466
+        </td>
+        <td>
+          3820
+          -
+          3824
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          474
+        </td>
+        <td>
+          3971
+          -
+          3975
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          473
+        </td>
+        <td>
+          3966
+          -
+          3970
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          104
+        </td>
+        <td>
+          475
+        </td>
+        <td>
+          3949
+          -
+          3976
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.ofDim
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Array.ofDim[Int](DancingLinks.this.size, DancingLinks.this.size)((ClassTag.Int: scala.reflect.ClassTag[Int]))
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          489
+        </td>
+        <td>
+          3981
+          -
+          4145
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          rowIds.foreach[Unit](((id: Int) =&gt; {
+  val r: Int = id./(DancingLinks.this.size.*(DancingLinks.this.size));
+  val c: Int = id.%(DancingLinks.this.size.*(DancingLinks.this.size))./(DancingLinks.this.size);
+  val n: Int = id.%(DancingLinks.this.size.*(DancingLinks.this.size)).%(DancingLinks.this.size);
+  a.apply(r).update(c, n.+(1))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          478
+        </td>
+        <td>
+          4015
+          -
+          4031
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          id./(DancingLinks.this.size.*(DancingLinks.this.size))
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          477
+        </td>
+        <td>
+          4021
+          -
+          4030
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(DancingLinks.this.size)
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          476
+        </td>
+        <td>
+          4026
+          -
+          4030
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          481
+        </td>
+        <td>
+          4067
+          -
+          4071
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          480
+        </td>
+        <td>
+          4053
+          -
+          4062
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(DancingLinks.this.size)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          479
+        </td>
+        <td>
+          4058
+          -
+          4062
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          482
+        </td>
+        <td>
+          4046
+          -
+          4071
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int./
+        </td>
+        <td style="background: #AEF1AE">
+          id.%(DancingLinks.this.size.*(DancingLinks.this.size))./(DancingLinks.this.size)
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          483
+        </td>
+        <td>
+          4099
+          -
+          4103
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          486
+        </td>
+        <td>
+          4087
+          -
+          4112
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.%
+        </td>
+        <td style="background: #AEF1AE">
+          id.%(DancingLinks.this.size.*(DancingLinks.this.size)).%(DancingLinks.this.size)
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          485
+        </td>
+        <td>
+          4108
+          -
+          4112
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          DancingLinks.size
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          484
+        </td>
+        <td>
+          4094
+          -
+          4103
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.*
+        </td>
+        <td style="background: #AEF1AE">
+          DancingLinks.this.size.*(DancingLinks.this.size)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          487
+        </td>
+        <td>
+          4136
+          -
+          4139
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          n.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          488
+        </td>
+        <td>
+          4126
+          -
+          4139
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.update
+        </td>
+        <td style="background: #AEF1AE">
+          a.apply(r).update(c, n.+(1))
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

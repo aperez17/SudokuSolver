@@ -1,0 +1,1297 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          parser\SudokuParser.scala.html
+        </title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>import java.io._
+import scala.io._
+
+object SudokuParser {
+  
+ /**
+  * Takes a file and outputs a sudoku puzzle in the format:
+  * Difficulty:Easy
+  * Size:9x9
+  * ... where ... contains the board
+  * @param filename: file that contains puzzle information
+  */
+ def puzzleFromFile(filename: String): Puzzle = {
+   val lines = try {
+     </span><span style='background: #AEF1AE'>Source.fromURL(getClass.getResource(filename)).getLines.toList</span><span style=''>
+   } catch {
+     case _: Throwable => </span><span style='background: #AEF1AE'>List.empty[String]</span><span style=''>
+   }
+   val z = </span><span style='background: #AEF1AE'>Puzzle(filename)</span><span style=''>
+   val (puzzleNoBoard, board) = getBasicInformation(z, lines)
+   </span><span style='background: #AEF1AE'>parseBoardFromLines(puzzleNoBoard, board)</span><span style=''>
+ }
+ 
+ /**
+  * Grabs the difficulty and size from the file lines and outputs the lines that contain the board as well
+  */
+ def getBasicInformation(z: Puzzle, lines: List[String]): (Puzzle, List[String]) = {
+   </span><span style='background: #AEF1AE'>lines.foldLeft(z, List.empty[String]){ case ((puzzle, boardLines), line) => 
+     line.trim().split(":").toVector match {
+       case Vector("Difficulty", difficulty) => (puzzle.copy(difficulty = Some(difficulty.trim)), boardLines)
+       case Vector("Size", size) => (puzzle.copy(size = Some(size.trim)), boardLines)
+       case _ => 
+         if(line.trim().length() > 0){
+           (puzzle, boardLines :+ line.trim)
+         } else {
+           </span><span style='background: #F0ADAD'>(puzzle, boardLines)</span><span style='background: #AEF1AE'>
+       }
+     }
+   }</span><span style=''>
+ }
+ 
+ /**
+  * Grab the board from the puzzle
+  */
+ def parseBoardFromLines(puzzle: Puzzle, lines: List[String]): Puzzle = {
+   val board = </span><span style='background: #AEF1AE'>lines.foldLeft(Seq.empty[Seq[Option[Int]]]) { case (board, lines) =>
+     board :+ lines.trim.split(",").toSeq.map{ digit =>
+       if(digit == "x"){
+         None
+       } else {
+         Some(digit.toInt)
+       }
+     }
+   }</span><span style=''>
+   </span><span style='background: #AEF1AE'>puzzle.copy(board = board)</span><span style=''>
+ }
+}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          630
+        </td>
+        <td>
+          336
+          -
+          398
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toList
+        </td>
+        <td style="background: #AEF1AE">
+          scala.io.Source.fromURL(SudokuParser.this.getClass().getResource(filename))(io.this.Codec.fallbackSystemCodec).getLines().toList
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          629
+        </td>
+        <td>
+          351
+          -
+          381
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Class.getResource
+        </td>
+        <td style="background: #AEF1AE">
+          SudokuParser.this.getClass().getResource(filename)
+        </td>
+      </tr><tr>
+        <td>
+          15
+        </td>
+        <td>
+          631
+        </td>
+        <td>
+          336
+          -
+          398
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toList
+        </td>
+        <td style="background: #AEF1AE">
+          scala.io.Source.fromURL(SudokuParser.this.getClass().getResource(filename))(io.this.Codec.fallbackSystemCodec).getLines().toList
+        </td>
+      </tr><tr>
+        <td>
+          17
+        </td>
+        <td>
+          632
+        </td>
+        <td>
+          438
+          -
+          456
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.empty
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.empty[String]
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          636
+        </td>
+        <td>
+          473
+          -
+          489
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Puzzle.apply
+        </td>
+        <td style="background: #AEF1AE">
+          Puzzle.apply(filename, Puzzle.apply$default$2, Puzzle.apply$default$3, Puzzle.apply$default$4)
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          633
+        </td>
+        <td>
+          473
+          -
+          473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.apply$default$2
+        </td>
+        <td style="background: #AEF1AE">
+          Puzzle.apply$default$2
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          635
+        </td>
+        <td>
+          473
+          -
+          473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.apply$default$4
+        </td>
+        <td style="background: #AEF1AE">
+          Puzzle.apply$default$4
+        </td>
+      </tr><tr>
+        <td>
+          19
+        </td>
+        <td>
+          634
+        </td>
+        <td>
+          473
+          -
+          473
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.apply$default$3
+        </td>
+        <td style="background: #AEF1AE">
+          Puzzle.apply$default$3
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          638
+        </td>
+        <td>
+          513
+          -
+          513
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._2
+        </td>
+      </tr><tr>
+        <td>
+          20
+        </td>
+        <td>
+          637
+        </td>
+        <td>
+          498
+          -
+          498
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td style="background: #AEF1AE">
+          x$1._1
+        </td>
+      </tr><tr>
+        <td>
+          21
+        </td>
+        <td>
+          639
+        </td>
+        <td>
+          555
+          -
+          596
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          SudokuParser.parseBoardFromLines
+        </td>
+        <td style="background: #AEF1AE">
+          SudokuParser.this.parseBoardFromLines(puzzleNoBoard, board)
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          666
+        </td>
+        <td>
+          807
+          -
+          1297
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.foldLeft
+        </td>
+        <td style="background: #AEF1AE">
+          lines.foldLeft[(Puzzle, List[String])](scala.Tuple2.apply[Puzzle, List[String]](z, immutable.this.List.empty[String]))(((x0$1: (Puzzle, List[String]), x1$1: String) =&gt; scala.Tuple2.apply[(Puzzle, List[String]), String](x0$1, x1$1) match {
+  case (_1: (Puzzle, List[String]), _2: String)((Puzzle, List[String]), String)((_1: Puzzle, _2: List[String])(Puzzle, List[String])((puzzle @ _), (boardLines @ _)), (line @ _)) =&gt; scala.this.Predef.refArrayOps[String](line.trim().split(&quot;:&quot;)).toVector match {
+    case scala.`package`.Vector.unapplySeq[String](&lt;unapply-selector&gt;) &lt;unapply&gt; (&quot;Difficulty&quot;, (difficulty @ _)) =&gt; scala.Tuple2.apply[Puzzle, List[String]]({
+      &lt;artifact&gt; val x$2: Some[String] = scala.Some.apply[String](difficulty.trim());
+      &lt;artifact&gt; val x$3: String = puzzle.copy$default$1;
+      &lt;artifact&gt; val x$4: Option[String] = puzzle.copy$default$3;
+      &lt;artifact&gt; val x$5: Seq[Seq[Option[Int]]] = puzzle.copy$default$4;
+      puzzle.copy(x$3, x$2, x$4, x$5)
+    }, boardLines)
+    case scala.`package`.Vector.unapplySeq[String](&lt;unapply-selector&gt;) &lt;unapply&gt; (&quot;Size&quot;, (size @ _)) =&gt; scala.Tuple2.apply[Puzzle, List[String]]({
+      &lt;artifact&gt; val x$6: Some[String] = scala.Some.apply[String](size.trim());
+      &lt;artifact&gt; val x$7: String = puzzle.copy$default$1;
+      &lt;artifact&gt; val x$8: Option[String] = puzzle.copy$default$2;
+      &lt;artifact&gt; val x$9: Seq[Seq[Option[Int]]] = puzzle.copy$default$4;
+      puzzle.copy(x$7, x$8, x$6, x$9)
+    }, boardLines)
+    case _ =&gt; if (line.trim().length().&gt;(0))
+      scala.Tuple2.apply[Puzzle, List[String]](puzzle, boardLines.:+[String, List[String]](line.trim())(immutable.this.List.canBuildFrom[String]))
+    else
+      scala.Tuple2.apply[Puzzle, List[String]](puzzle, boardLines)
+  }
+}))
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          641
+        </td>
+        <td>
+          807
+          -
+          844
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Puzzle, List[String]](z, immutable.this.List.empty[String])
+        </td>
+      </tr><tr>
+        <td>
+          28
+        </td>
+        <td>
+          640
+        </td>
+        <td>
+          825
+          -
+          843
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.empty
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.empty[String]
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          642
+        </td>
+        <td>
+          889
+          -
+          911
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.split
+        </td>
+        <td style="background: #AEF1AE">
+          line.trim().split(&quot;:&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          643
+        </td>
+        <td>
+          889
+          -
+          920
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toVector
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.refArrayOps[String](line.trim().split(&quot;:&quot;)).toVector
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          645
+        </td>
+        <td>
+          1003
+          -
+          1024
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](difficulty.trim())
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          648
+        </td>
+        <td>
+          985
+          -
+          985
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$4
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$4
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          650
+        </td>
+        <td>
+          977
+          -
+          1038
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Puzzle, List[String]]({
+  &lt;artifact&gt; val x$2: Some[String] = scala.Some.apply[String](difficulty.trim());
+  &lt;artifact&gt; val x$3: String = puzzle.copy$default$1;
+  &lt;artifact&gt; val x$4: Option[String] = puzzle.copy$default$3;
+  &lt;artifact&gt; val x$5: Seq[Seq[Option[Int]]] = puzzle.copy$default$4;
+  puzzle.copy(x$3, x$2, x$4, x$5)
+}, boardLines)
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          644
+        </td>
+        <td>
+          1008
+          -
+          1023
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.trim
+        </td>
+        <td style="background: #AEF1AE">
+          difficulty.trim()
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          647
+        </td>
+        <td>
+          985
+          -
+          985
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$3
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$3
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          646
+        </td>
+        <td>
+          985
+          -
+          985
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$1
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$1
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          649
+        </td>
+        <td>
+          978
+          -
+          1025
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Puzzle.copy
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy(x$3, x$2, x$4, x$5)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          654
+        </td>
+        <td>
+          1083
+          -
+          1083
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$2
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$2
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          657
+        </td>
+        <td>
+          1075
+          -
+          1124
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Puzzle, List[String]]({
+  &lt;artifact&gt; val x$6: Some[String] = scala.Some.apply[String](size.trim());
+  &lt;artifact&gt; val x$7: String = puzzle.copy$default$1;
+  &lt;artifact&gt; val x$8: Option[String] = puzzle.copy$default$2;
+  &lt;artifact&gt; val x$9: Seq[Seq[Option[Int]]] = puzzle.copy$default$4;
+  puzzle.copy(x$7, x$8, x$6, x$9)
+}, boardLines)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          651
+        </td>
+        <td>
+          1100
+          -
+          1109
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.trim
+        </td>
+        <td style="background: #AEF1AE">
+          size.trim()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          653
+        </td>
+        <td>
+          1083
+          -
+          1083
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$1
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$1
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          656
+        </td>
+        <td>
+          1076
+          -
+          1111
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Puzzle.copy
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy(x$7, x$8, x$6, x$9)
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          655
+        </td>
+        <td>
+          1083
+          -
+          1083
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$4
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$4
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          652
+        </td>
+        <td>
+          1095
+          -
+          1110
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[String](size.trim())
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          658
+        </td>
+        <td>
+          1155
+          -
+          1179
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          line.trim().length().&gt;(0)
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          660
+        </td>
+        <td>
+          1213
+          -
+          1213
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          immutable.this.List.canBuildFrom[String]
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          663
+        </td>
+        <td>
+          1193
+          -
+          1226
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Puzzle, List[String]](puzzle, boardLines.:+[String, List[String]](line.trim())(immutable.this.List.canBuildFrom[String]))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          659
+        </td>
+        <td>
+          1216
+          -
+          1225
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.trim
+        </td>
+        <td style="background: #AEF1AE">
+          line.trim()
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          662
+        </td>
+        <td>
+          1193
+          -
+          1226
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple2.apply[Puzzle, List[String]](puzzle, boardLines.:+[String, List[String]](line.trim())(immutable.this.List.canBuildFrom[String]))
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          661
+        </td>
+        <td>
+          1202
+          -
+          1225
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td style="background: #AEF1AE">
+          boardLines.:+[String, List[String]](line.trim())(immutable.this.List.canBuildFrom[String])
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          665
+        </td>
+        <td>
+          1256
+          -
+          1276
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[Puzzle, List[String]](puzzle, boardLines)
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          664
+        </td>
+        <td>
+          1256
+          -
+          1276
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple2.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Tuple2.apply[Puzzle, List[String]](puzzle, boardLines)
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          667
+        </td>
+        <td>
+          1452
+          -
+          1479
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.generic.GenericCompanion.empty
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.empty[Seq[Option[Int]]]
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          679
+        </td>
+        <td>
+          1437
+          -
+          1664
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.foldLeft
+        </td>
+        <td style="background: #AEF1AE">
+          lines.foldLeft[Seq[Seq[Option[Int]]]](collection.this.Seq.empty[Seq[Option[Int]]])(((x0$2: Seq[Seq[Option[Int]]], x1$2: String) =&gt; scala.Tuple2.apply[Seq[Seq[Option[Int]]], String](x0$2, x1$2) match {
+  case (_1: Seq[Seq[Option[Int]]], _2: String)(Seq[Seq[Option[Int]]], String)((board @ _), (lines @ _)) =&gt; board.:+[Seq[Option[Int]], Seq[Seq[Option[Int]]]](scala.this.Predef.refArrayOps[String](lines.trim().split(&quot;,&quot;)).toSeq.map[Option[Int], Seq[Option[Int]]](((digit: String) =&gt; if (digit.==(&quot;x&quot;))
+    scala.None
+  else
+    scala.Some.apply[Int](scala.this.Predef.augmentString(digit).toInt)))(collection.this.Seq.canBuildFrom[Option[Int]]))(collection.this.Seq.canBuildFrom[Seq[Option[Int]]])
+}))
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          678
+        </td>
+        <td>
+          1511
+          -
+          1659
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.:+
+        </td>
+        <td style="background: #AEF1AE">
+          board.:+[Seq[Option[Int]], Seq[Seq[Option[Int]]]](scala.this.Predef.refArrayOps[String](lines.trim().split(&quot;,&quot;)).toSeq.map[Option[Int], Seq[Option[Int]]](((digit: String) =&gt; if (digit.==(&quot;x&quot;))
+  scala.None
+else
+  scala.Some.apply[Int](scala.this.Predef.augmentString(digit).toInt)))(collection.this.Seq.canBuildFrom[Option[Int]]))(collection.this.Seq.canBuildFrom[Seq[Option[Int]]])
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          675
+        </td>
+        <td>
+          1551
+          -
+          1551
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[Option[Int]]
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          677
+        </td>
+        <td>
+          1517
+          -
+          1517
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.collection.Seq.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          collection.this.Seq.canBuildFrom[Seq[Option[Int]]]
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          668
+        </td>
+        <td>
+          1520
+          -
+          1541
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.split
+        </td>
+        <td style="background: #AEF1AE">
+          lines.trim().split(&quot;,&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          676
+        </td>
+        <td>
+          1520
+          -
+          1659
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.refArrayOps[String](lines.trim().split(&quot;,&quot;)).toSeq.map[Option[Int], Seq[Option[Int]]](((digit: String) =&gt; if (digit.==(&quot;x&quot;))
+  scala.None
+else
+  scala.Some.apply[Int](scala.this.Predef.augmentString(digit).toInt)))(collection.this.Seq.canBuildFrom[Option[Int]])
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          669
+        </td>
+        <td>
+          1572
+          -
+          1584
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td style="background: #AEF1AE">
+          digit.==(&quot;x&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          671
+        </td>
+        <td>
+          1596
+          -
+          1600
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          670
+        </td>
+        <td>
+          1596
+          -
+          1600
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          672
+        </td>
+        <td>
+          1631
+          -
+          1642
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.augmentString(digit).toInt
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          674
+        </td>
+        <td>
+          1626
+          -
+          1643
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[Int](scala.this.Predef.augmentString(digit).toInt)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          673
+        </td>
+        <td>
+          1626
+          -
+          1643
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[Int](scala.this.Predef.augmentString(digit).toInt)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          681
+        </td>
+        <td>
+          1675
+          -
+          1675
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$2
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$2
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          683
+        </td>
+        <td>
+          1668
+          -
+          1694
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Puzzle.copy
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy(x$11, x$12, x$13, x$10)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          680
+        </td>
+        <td>
+          1675
+          -
+          1675
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$1
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$1
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          682
+        </td>
+        <td>
+          1675
+          -
+          1675
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Puzzle.copy$default$3
+        </td>
+        <td style="background: #AEF1AE">
+          puzzle.copy$default$3
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

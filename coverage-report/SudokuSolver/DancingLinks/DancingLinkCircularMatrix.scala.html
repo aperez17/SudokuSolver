@@ -1,0 +1,5182 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          SudokuSolver\DancingLinks\DancingLinkCircularMatrix.scala.html
+        </title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier;'>1 <span style=''>
+// Note about immutability:
+
+// The data-structure used here is designed for it's ability to be modified temporarily to check a test space
+// and then backtrack efficiently back to the pre-modified state.  As there is tons of mutation going on, this
+// implementation uses a lot of scala "vars", this is entirely intentional.  A solution using immutable
+// data structures would be very interesting but would need to be designed entirely differently.
+
+// TODO:  the node references used by Node and Header should be encapsulated such that an alternative "Matrix"
+// implementation could easily be written and swapped in to replace this one.
+
+/**
+ * Implementation of the matrix described on Knuth's "Dancing Links" implementation of Algorithm X.  The point of
+ * this data structure is to make the removal and re-insertion of columns and rows in a sparse matrix cheap.  The
+ * re-insertion is needed for the backtracking, which Algorithm X does a lot of.
+ * 
+ * The matrix's data structure a circular linked list of headers each containing a circular list of nodes. Think of 
+ * it as a torus, with the headers as a circle on the top of the torus and the nodes wrapping around.
+ */
+class CircularLinkedMatrix extends ExactCoverMatrix {
+  
+  val root: Header = </span><span style='background: #AEF1AE'>new Header(-1)</span><span style=''>
+  
+  def columns() : Iterator[Column] = {
+    var header = </span><span style='background: #AEF1AE'>root.asInstanceOf[Column]</span><span style=''>
+    def next() = {
+      header = </span><span style='background: #AEF1AE'>header.next().asInstanceOf[Column]</span><span style=''>
+      header
+    }
+    </span><span style='background: #AEF1AE'>Iterator.continually(next()) takeWhile(_ != root)</span><span style=''>
+  }
+  
+  def this(rowsIn: Map[Int, Row]) = {
+    </span><span style='background: #AEF1AE'>this()</span><span style=''>
+    
+    val rows = </span><span style='background: #AEF1AE'>rowsIn.toList.sortBy{_._1}</span><span style=''>
+    
+    val rowCount = </span><span style='background: #AEF1AE'>rows.size-1</span><span style=''>
+    val iter = </span><span style='background: #AEF1AE'>rows.iterator</span><span style=''>
+    val colCount = </span><span style='background: #AEF1AE'>iter.next()._2.size-1</span><span style=''>
+    
+    var prevHeader = </span><span style='background: #AEF1AE'>root</span><span style=''>
+    </span><span style='background: #AEF1AE'>for(c <- 0 to colCount) {
+      val header = new Header(c)
+      prevHeader.addRight(header)
+      prevHeader = header
+    }</span><span style=''>
+    
+    
+    </span><span style='background: #AEF1AE'>for(row <- rows) {
+      var header = root
+      val rawRow = row._2
+      var prev :Option[LinkedMatrixNode] = None
+      for(c <- 0 to colCount) {
+        header = header.right.asInstanceOf[Header]
+        if(rawRow.cells(c) == 1) {
+          val node = new LinkedMatrixNode(rawRow.idx)
+          header.up.addDown(node)
+          if(prev.isDefined) {
+            prev.get.addRight(node)
+          }
+          
+          prev = Option(node)
+        }
+      }
+    }</span><span style=''>
+  }
+  
+  def this(matrix: Array[Array[Int]]) = {
+    </span><span style='background: #F0ADAD'>this()</span><span style=''>
+    
+    val rowCount = </span><span style='background: #F0ADAD'>matrix.size-1</span><span style=''>
+    val colCount = </span><span style='background: #F0ADAD'>matrix(0).size-1</span><span style=''>
+    
+    var prevHeader = </span><span style='background: #F0ADAD'>root</span><span style=''>
+    </span><span style='background: #F0ADAD'>for(c <- 0 to colCount) {
+      val header = new Header(c)
+      prevHeader.addRight(header)
+      prevHeader = header
+    }</span><span style=''>
+    
+    
+    </span><span style='background: #F0ADAD'>for(r <- 0 to rowCount) {
+      var header = root
+      var prev :Option[LinkedMatrixNode] = None
+      for(c <- 0 to colCount) {
+        header = header.right.asInstanceOf[Header]
+        if(matrix(r)(c) == 1) {
+          val node = new LinkedMatrixNode(r)
+          header.up.addDown(node)
+          if(prev.isDefined) {
+            prev.get.addRight(node)
+          }
+          
+          prev = Option(node)
+        }
+      }
+    }</span><span style=''>
+  } 
+  
+  def isEmpty() : Boolean = {
+    </span><span style='background: #AEF1AE'>root == root.right</span><span style=''>
+  }
+  
+  override def toString() : String = {
+    var header = </span><span style='background: #F0ADAD'>root</span><span style=''>
+    var result: String = </span><span style='background: #F0ADAD'>""</span><span style=''>;
+    
+    </span><span style='background: #F0ADAD'>result += "matrix: [\n"</span><span style=''>
+    
+    while(</span><span style='background: #F0ADAD'>header.right != root</span><span style=''>) </span><span style='background: #F0ADAD'>{
+      header = header.right.asInstanceOf[Header]
+      
+      result += header.id + ": ["
+      
+      var node: LinkedMatrixNode = header
+      while(node.down != header) {
+        node = node.down
+        result += node.rowId 
+        if(node.down != header) result += ", "
+      }
+      result += "]\n"
+    }</span><span style=''>
+      
+    </span><span style='background: #F0ADAD'>result += "]"</span><span style=''>
+    
+    result
+  }
+}
+
+
+/**
+ * Utility class for help in constructing a matrix.
+ */
+class Row(indexIn: Int, cellsIn: Array[Int]) {
+  val idx = </span><span style='background: #AEF1AE'>indexIn</span><span style=''>
+  val cells = </span><span style='background: #AEF1AE'>cellsIn</span><span style=''>
+
+  def apply(idx: Int) {
+    </span><span style='background: #F0ADAD'>cells(idx)</span><span style=''>
+  }
+
+  override def toString() = {
+    </span><span style='background: #F0ADAD'>"(" + idx + " -> " + cells.mkString(", ") + ")"</span><span style=''>
+  }
+
+  def size = </span><span style='background: #AEF1AE'>cells.length</span><span style=''>
+}
+
+class LinkedMatrixNode(val rowId: Int) extends Node {
+  
+  var up: LinkedMatrixNode = this
+  var down: LinkedMatrixNode = this
+  var left: LinkedMatrixNode = this
+  var right: LinkedMatrixNode = this
+  
+  def getRowId() = </span><span style='background: #AEF1AE'>rowId</span><span style=''>
+  
+  def searchDown(searchRowId: Int) : Option[LinkedMatrixNode] = {
+
+    var next = </span><span style='background: #F0ADAD'>this.down</span><span style=''>
+    while(</span><span style='background: #F0ADAD'>next != this</span><span style=''>) </span><span style='background: #F0ADAD'>{
+      if(next.rowId == searchRowId) return Some(next)
+      next = next.down
+    }</span><span style=''>
+    return </span><span style='background: #F0ADAD'>None</span><span style=''>
+
+  }
+  
+  def getColumn() = {
+    if(</span><span style='background: #AEF1AE'>this.isInstanceOf[Header]</span><span style=''>) {
+      </span><span style='background: #F0ADAD'>this.asInstanceOf[Header]</span><span style=''>
+    } else </span><span style='background: #AEF1AE'>{
+      var node = this.up
+      while(!node.isInstanceOf[Header]) {
+        node = node.up
+      }
+      node.asInstanceOf[Header]
+    }</span><span style=''>
+  }
+  
+  def coverHoriz() = {
+    </span><span style='background: #AEF1AE'>right.left = left</span><span style=''>
+    </span><span style='background: #AEF1AE'>left.right = right</span><span style=''>
+  }
+  
+  def uncoverHoriz() = {
+    </span><span style='background: #F0ADAD'>right.left = this</span><span style=''>
+    </span><span style='background: #F0ADAD'>left.right = this</span><span style=''>
+  }
+  
+  def coverVert() = {
+    </span><span style='background: #AEF1AE'>up.down = down</span><span style=''>
+    </span><span style='background: #AEF1AE'>down.up = up</span><span style=''>
+  }
+  
+  def uncoverVert() = {
+    </span><span style='background: #F0ADAD'>down.up = this</span><span style=''>
+    </span><span style='background: #F0ADAD'>up.down = this</span><span style=''>
+  }
+  
+  def coverRow(anchor: LinkedMatrixNode) = {
+    var node = anchor
+    while(</span><span style='background: #AEF1AE'>node.right != anchor</span><span style=''>) </span><span style='background: #AEF1AE'>{
+      node.right.coverVert()
+      node = node.right
+    }</span><span style=''>
+    
+  }
+  
+  def uncoverRow(anchor: LinkedMatrixNode) = {
+    var node = anchor
+    while(</span><span style='background: #F0ADAD'>node.right != anchor</span><span style=''>) </span><span style='background: #F0ADAD'>{
+      node.right.uncoverVert()
+      node = node.right
+    }</span><span style=''>
+  }
+
+  def addRight(node: LinkedMatrixNode) = {
+    </span><span style='background: #AEF1AE'>node.right = right</span><span style=''>
+    </span><span style='background: #AEF1AE'>node.left = this</span><span style=''>
+    
+    </span><span style='background: #AEF1AE'>right.left = node</span><span style=''>
+    </span><span style='background: #AEF1AE'>right = node</span><span style=''>
+    
+  }
+  
+  def addDown(node: LinkedMatrixNode) = {
+    </span><span style='background: #AEF1AE'>node.down = down</span><span style=''>
+    </span><span style='background: #AEF1AE'>node.up = this</span><span style=''>
+    
+    </span><span style='background: #AEF1AE'>down.up = node</span><span style=''>
+    </span><span style='background: #AEF1AE'>down = node</span><span style=''>
+  }
+  
+  def allNodesInRow() : Iterator[Node] = {
+    var node = this
+    def next() = {
+      node = </span><span style='background: #AEF1AE'>node.right</span><span style=''>
+      node
+    }
+    </span><span style='background: #AEF1AE'>Iterator.single(node) ++ (Iterator.continually(next()) takeWhile(_ != this))</span><span style=''>
+  }
+  
+  override def toString() = {
+    </span><span style='background: #F0ADAD'>"Node(" + rowId + ")"</span><span style=''>
+  }
+}
+
+/**
+ * Header in a CircularLinkedMatrix.
+ */
+class Header(val id: Int) extends LinkedMatrixNode(-1) with Column {
+  def searchRight(searchHeaderId: Int) : Option[LinkedMatrixNode] = {
+
+    var next : Header = </span><span style='background: #F0ADAD'>this.right.asInstanceOf[Header]</span><span style=''>
+    while(</span><span style='background: #F0ADAD'>next != this</span><span style=''>) </span><span style='background: #F0ADAD'>{
+      if(next.id == searchHeaderId) return Some(next)
+      next = next.right.asInstanceOf[Header]
+    }</span><span style=''>
+    return </span><span style='background: #F0ADAD'>None</span><span style=''>
+  }
+  
+  def size() = {
+    var i = </span><span style='background: #AEF1AE'>0</span><span style=''>
+    var node = </span><span style='background: #AEF1AE'>this.down</span><span style=''>
+    while(</span><span style='background: #AEF1AE'>node != this</span><span style=''>) </span><span style='background: #AEF1AE'>{
+      node = node.down
+      i += 1
+    }</span><span style=''>
+    
+    </span><span style='background: #AEF1AE'>i</span><span style=''>
+  }
+    
+  def coverColumn() = {
+    var node = </span><span style='background: #AEF1AE'>this.down</span><span style=''>
+    while(</span><span style='background: #AEF1AE'>node != this</span><span style=''>) </span><span style='background: #AEF1AE'>{
+      coverRow(node)
+      node = node.down
+    }</span><span style=''>
+    </span><span style='background: #AEF1AE'>this.coverHoriz()</span><span style=''>
+  }
+  
+    
+  def uncoverColumn() = {
+    var node = </span><span style='background: #F0ADAD'>this.down</span><span style=''>
+    while(</span><span style='background: #F0ADAD'>node != this</span><span style=''>) </span><span style='background: #F0ADAD'>{
+      uncoverRow(node)
+      node = node.down
+    }</span><span style=''>
+    </span><span style='background: #F0ADAD'>this.uncoverHoriz()</span><span style=''>
+  }
+  
+  def next() = {
+    </span><span style='background: #AEF1AE'>right.asInstanceOf[Column]</span><span style=''>
+  }
+  
+  def previous() = {
+    </span><span style='background: #F0ADAD'>left.asInstanceOf[Column]</span><span style=''>
+  }
+  
+  def nodes() = {
+    var node = </span><span style='background: #AEF1AE'>this.asInstanceOf[LinkedMatrixNode]</span><span style=''>
+    def next() = {
+      node = </span><span style='background: #AEF1AE'>node.down</span><span style=''>
+      node
+    }
+    </span><span style='background: #AEF1AE'>Iterator.continually(next()) takeWhile(_ != this)</span><span style=''>
+  }
+  
+  override def toString() = {
+    </span><span style='background: #F0ADAD'>"Header(" + id + ")"</span><span style=''>
+  }
+}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          22
+        </td>
+        <td>
+          151
+        </td>
+        <td>
+          1261
+          -
+          1275
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new Header(-1)
+        </td>
+      </tr><tr>
+        <td>
+          25
+        </td>
+        <td>
+          152
+        </td>
+        <td>
+          1335
+          -
+          1360
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.root.asInstanceOf[Column]
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          153
+        </td>
+        <td>
+          1395
+          -
+          1429
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          header.next().asInstanceOf[Column]
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          155
+        </td>
+        <td>
+          1497
+          -
+          1501
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          154
+        </td>
+        <td>
+          1474
+          -
+          1480
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          CircularLinkedMatrix.next
+        </td>
+        <td style="background: #AEF1AE">
+          next()
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          157
+        </td>
+        <td>
+          1453
+          -
+          1502
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.takeWhile
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Iterator.continually[Column](next()).takeWhile(((x$1: Column) =&gt; x$1.!=(CircularLinkedMatrix.this.root)))
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          156
+        </td>
+        <td>
+          1492
+          -
+          1501
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #AEF1AE">
+          x$1.!=(CircularLinkedMatrix.this.root)
+        </td>
+      </tr><tr>
+        <td>
+          33
+        </td>
+        <td>
+          190
+        </td>
+        <td>
+          1546
+          -
+          1546
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          158
+        </td>
+        <td>
+          1552
+          -
+          1558
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          CircularLinkedMatrix.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.&lt;init&gt;()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          160
+        </td>
+        <td>
+          1599
+          -
+          1599
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.math.Ordering.Int
+        </td>
+        <td style="background: #AEF1AE">
+          math.this.Ordering.Int
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          159
+        </td>
+        <td>
+          1600
+          -
+          1604
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._1
+        </td>
+        <td style="background: #AEF1AE">
+          x$2._1
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          161
+        </td>
+        <td>
+          1579
+          -
+          1605
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.SeqLike.sortBy
+        </td>
+        <td style="background: #AEF1AE">
+          rowsIn.toList.sortBy[Int](((x$2: (Int, Row)) =&gt; x$2._1))(math.this.Ordering.Int)
+        </td>
+      </tr><tr>
+        <td>
+          38
+        </td>
+        <td>
+          162
+        </td>
+        <td>
+          1630
+          -
+          1641
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          rows.size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          39
+        </td>
+        <td>
+          163
+        </td>
+        <td>
+          1657
+          -
+          1670
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.LinearSeqLike.iterator
+        </td>
+        <td style="background: #AEF1AE">
+          rows.iterator
+        </td>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          164
+        </td>
+        <td>
+          1690
+          -
+          1711
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #AEF1AE">
+          iter.next()._2.size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          42
+        </td>
+        <td>
+          165
+        </td>
+        <td>
+          1738
+          -
+          1742
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          166
+        </td>
+        <td>
+          1756
+          -
+          1757
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          169
+        </td>
+        <td>
+          1747
+          -
+          1871
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(0).to(colCount).foreach[Unit](((c: Int) =&gt; {
+  val header: Header = new Header(c);
+  prevHeader.addRight(header);
+  prevHeader = header
+}))
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          167
+        </td>
+        <td>
+          1792
+          -
+          1805
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new Header(c)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          168
+        </td>
+        <td>
+          1812
+          -
+          1839
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.addRight
+        </td>
+        <td style="background: #AEF1AE">
+          prevHeader.addRight(header)
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          189
+        </td>
+        <td>
+          1886
+          -
+          2352
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.List.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          rows.foreach[Unit](((row: (Int, Row)) =&gt; {
+  var header: Header = CircularLinkedMatrix.this.root;
+  val rawRow: Row = row._2;
+  var prev: Option[LinkedMatrixNode] = scala.None;
+  scala.this.Predef.intWrapper(0).to(colCount).foreach[Unit](((c: Int) =&gt; {
+    header = header.right.asInstanceOf[Header];
+    if (rawRow.cells.apply(c).==(1))
+      {
+        val node: LinkedMatrixNode = new LinkedMatrixNode(rawRow.idx);
+        header.up.addDown(node);
+        if (prev.isDefined)
+          prev.get.addRight(node)
+        else
+          ();
+        prev = scala.Option.apply[LinkedMatrixNode](node)
+      }
+    else
+      ()
+  }))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          170
+        </td>
+        <td>
+          1924
+          -
+          1928
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          171
+        </td>
+        <td>
+          1948
+          -
+          1954
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Tuple2._2
+        </td>
+        <td style="background: #AEF1AE">
+          row._2
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          172
+        </td>
+        <td>
+          1998
+          -
+          2002
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          173
+        </td>
+        <td>
+          2018
+          -
+          2019
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          188
+        </td>
+        <td>
+          2009
+          -
+          2346
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.intWrapper(0).to(colCount).foreach[Unit](((c: Int) =&gt; {
+  header = header.right.asInstanceOf[Header];
+  if (rawRow.cells.apply(c).==(1))
+    {
+      val node: LinkedMatrixNode = new LinkedMatrixNode(rawRow.idx);
+      header.up.addDown(node);
+      if (prev.isDefined)
+        prev.get.addRight(node)
+      else
+        ();
+      prev = scala.Option.apply[LinkedMatrixNode](node)
+    }
+  else
+    ()
+}))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          174
+        </td>
+        <td>
+          2052
+          -
+          2085
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          header.right.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          185
+        </td>
+        <td>
+          2119
+          -
+          2338
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val node: LinkedMatrixNode = new LinkedMatrixNode(rawRow.idx);
+  header.up.addDown(node);
+  if (prev.isDefined)
+    prev.get.addRight(node)
+  else
+    ();
+  prev = scala.Option.apply[LinkedMatrixNode](node)
+}
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          175
+        </td>
+        <td>
+          2097
+          -
+          2117
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #AEF1AE">
+          rawRow.cells.apply(c).==(1)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          187
+        </td>
+        <td>
+          2094
+          -
+          2094
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          186
+        </td>
+        <td>
+          2094
+          -
+          2094
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          176
+        </td>
+        <td>
+          2163
+          -
+          2173
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Row.idx
+        </td>
+        <td style="background: #AEF1AE">
+          rawRow.idx
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          177
+        </td>
+        <td>
+          2142
+          -
+          2174
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new LinkedMatrixNode(rawRow.idx)
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          178
+        </td>
+        <td>
+          2185
+          -
+          2208
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.addDown
+        </td>
+        <td style="background: #AEF1AE">
+          header.up.addDown(node)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          182
+        </td>
+        <td>
+          2219
+          -
+          2219
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          183
+        </td>
+        <td>
+          2219
+          -
+          2219
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          179
+        </td>
+        <td>
+          2222
+          -
+          2236
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td style="background: #AEF1AE">
+          prev.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          181
+        </td>
+        <td>
+          2252
+          -
+          2275
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          LinkedMatrixNode.addRight
+        </td>
+        <td style="background: #AEF1AE">
+          prev.get.addRight(node)
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          180
+        </td>
+        <td>
+          2252
+          -
+          2275
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.addRight
+        </td>
+        <td style="background: #AEF1AE">
+          prev.get.addRight(node)
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          184
+        </td>
+        <td>
+          2316
+          -
+          2328
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Option.apply[LinkedMatrixNode](node)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          218
+        </td>
+        <td>
+          2400
+          -
+          2400
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          191
+        </td>
+        <td>
+          2406
+          -
+          2412
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          CircularLinkedMatrix.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          CircularLinkedMatrix.this.&lt;init&gt;()
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          192
+        </td>
+        <td>
+          2437
+          -
+          2450
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.refArrayOps[Array[Int]](matrix).size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          193
+        </td>
+        <td>
+          2470
+          -
+          2486
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.-
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.intArrayOps(matrix.apply(0)).size.-(1)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          194
+        </td>
+        <td>
+          2513
+          -
+          2517
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #F0ADAD">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          198
+        </td>
+        <td>
+          2522
+          -
+          2646
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.intWrapper(0).to(colCount).foreach[Unit](((c: Int) =&gt; {
+  val header: Header = new Header(c);
+  prevHeader.addRight(header);
+  prevHeader = header
+}))
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          195
+        </td>
+        <td>
+          2531
+          -
+          2532
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          196
+        </td>
+        <td>
+          2567
+          -
+          2580
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new Header(c)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          197
+        </td>
+        <td>
+          2587
+          -
+          2614
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.addRight
+        </td>
+        <td style="background: #F0ADAD">
+          prevHeader.addRight(header)
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          199
+        </td>
+        <td>
+          2670
+          -
+          2671
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          217
+        </td>
+        <td>
+          2661
+          -
+          3096
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.intWrapper(0).to(rowCount).foreach[Unit](((r: Int) =&gt; {
+  var header: Header = CircularLinkedMatrix.this.root;
+  var prev: Option[LinkedMatrixNode] = scala.None;
+  scala.this.Predef.intWrapper(0).to(colCount).foreach[Unit](((c: Int) =&gt; {
+    header = header.right.asInstanceOf[Header];
+    if (matrix.apply(r).apply(c).==(1))
+      {
+        val node: LinkedMatrixNode = new LinkedMatrixNode(r);
+        header.up.addDown(node);
+        if (prev.isDefined)
+          prev.get.addRight(node)
+        else
+          ();
+        prev = scala.Option.apply[LinkedMatrixNode](node)
+      }
+    else
+      ()
+  }))
+}))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          200
+        </td>
+        <td>
+          2706
+          -
+          2710
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #F0ADAD">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          85
+        </td>
+        <td>
+          201
+        </td>
+        <td>
+          2754
+          -
+          2758
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          202
+        </td>
+        <td>
+          2774
+          -
+          2775
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          216
+        </td>
+        <td>
+          2765
+          -
+          3090
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.immutable.Range.foreach
+        </td>
+        <td style="background: #F0ADAD">
+          scala.this.Predef.intWrapper(0).to(colCount).foreach[Unit](((c: Int) =&gt; {
+  header = header.right.asInstanceOf[Header];
+  if (matrix.apply(r).apply(c).==(1))
+    {
+      val node: LinkedMatrixNode = new LinkedMatrixNode(r);
+      header.up.addDown(node);
+      if (prev.isDefined)
+        prev.get.addRight(node)
+      else
+        ();
+      prev = scala.Option.apply[LinkedMatrixNode](node)
+    }
+  else
+    ()
+}))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          203
+        </td>
+        <td>
+          2808
+          -
+          2841
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          header.right.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          214
+        </td>
+        <td>
+          2850
+          -
+          2850
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          213
+        </td>
+        <td>
+          2872
+          -
+          3082
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  val node: LinkedMatrixNode = new LinkedMatrixNode(r);
+  header.up.addDown(node);
+  if (prev.isDefined)
+    prev.get.addRight(node)
+  else
+    ();
+  prev = scala.Option.apply[LinkedMatrixNode](node)
+}
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          204
+        </td>
+        <td>
+          2853
+          -
+          2870
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #F0ADAD">
+          matrix.apply(r).apply(c).==(1)
+        </td>
+      </tr><tr>
+        <td>
+          88
+        </td>
+        <td>
+          215
+        </td>
+        <td>
+          2850
+          -
+          2850
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          205
+        </td>
+        <td>
+          2895
+          -
+          2918
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new LinkedMatrixNode(r)
+        </td>
+      </tr><tr>
+        <td>
+          90
+        </td>
+        <td>
+          206
+        </td>
+        <td>
+          2929
+          -
+          2952
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.addDown
+        </td>
+        <td style="background: #F0ADAD">
+          header.up.addDown(node)
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          211
+        </td>
+        <td>
+          2963
+          -
+          2963
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          207
+        </td>
+        <td>
+          2966
+          -
+          2980
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Option.isDefined
+        </td>
+        <td style="background: #F0ADAD">
+          prev.isDefined
+        </td>
+      </tr><tr>
+        <td>
+          91
+        </td>
+        <td>
+          210
+        </td>
+        <td>
+          2963
+          -
+          2963
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          209
+        </td>
+        <td>
+          2996
+          -
+          3019
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          LinkedMatrixNode.addRight
+        </td>
+        <td style="background: #F0ADAD">
+          prev.get.addRight(node)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          208
+        </td>
+        <td>
+          2996
+          -
+          3019
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.addRight
+        </td>
+        <td style="background: #F0ADAD">
+          prev.get.addRight(node)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          212
+        </td>
+        <td>
+          3060
+          -
+          3072
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Option.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Option.apply[LinkedMatrixNode](node)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          220
+        </td>
+        <td>
+          3139
+          -
+          3157
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.==
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.root.==(CircularLinkedMatrix.this.root.right)
+        </td>
+      </tr><tr>
+        <td>
+          102
+        </td>
+        <td>
+          219
+        </td>
+        <td>
+          3147
+          -
+          3157
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.right
+        </td>
+        <td style="background: #AEF1AE">
+          CircularLinkedMatrix.this.root.right
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          221
+        </td>
+        <td>
+          3221
+          -
+          3225
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #F0ADAD">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          222
+        </td>
+        <td>
+          3251
+          -
+          3253
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;&quot;
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          223
+        </td>
+        <td>
+          3264
+          -
+          3287
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          result.+(&quot;matrix: [\n&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          245
+        </td>
+        <td>
+          3297
+          -
+          3297
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          244
+        </td>
+        <td>
+          3325
+          -
+          3638
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    header = header.right.asInstanceOf[Header];
+    result = result.+(header.id.+(&quot;: [&quot;));
+    var node: LinkedMatrixNode = header;
+    while$1(){
+      if (node.down.!=(header))
+        {
+          {
+            node = node.down;
+            result = result.+(node.rowId);
+            if (node.down.!=(header))
+              result = result.+(&quot;, &quot;)
+            else
+              ()
+          };
+          while$1()
+        }
+      else
+        ()
+    };
+    result = result.+(&quot;]\n&quot;)
+  };
+  while$2()
+}
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          225
+        </td>
+        <td>
+          3303
+          -
+          3323
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          header.right.!=(CircularLinkedMatrix.this.root)
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          243
+        </td>
+        <td>
+          3325
+          -
+          3325
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          CircularLinkedMatrix.while$2
+        </td>
+        <td style="background: #F0ADAD">
+          while$2()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          246
+        </td>
+        <td>
+          3297
+          -
+          3297
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          224
+        </td>
+        <td>
+          3319
+          -
+          3323
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          CircularLinkedMatrix.root
+        </td>
+        <td style="background: #F0ADAD">
+          CircularLinkedMatrix.this.root
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          226
+        </td>
+        <td>
+          3342
+          -
+          3375
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          header.right.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          227
+        </td>
+        <td>
+          3399
+          -
+          3416
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #F0ADAD">
+          header.id.+(&quot;: [&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          228
+        </td>
+        <td>
+          3389
+          -
+          3416
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          result.+(header.id.+(&quot;: [&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          229
+        </td>
+        <td>
+          3478
+          -
+          3497
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          node.down.!=(header)
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          238
+        </td>
+        <td>
+          3499
+          -
+          3499
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          CircularLinkedMatrix.while$1
+        </td>
+        <td style="background: #F0ADAD">
+          while$1()
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          241
+        </td>
+        <td>
+          3472
+          -
+          3472
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          240
+        </td>
+        <td>
+          3472
+          -
+          3472
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          117
+        </td>
+        <td>
+          239
+        </td>
+        <td>
+          3499
+          -
+          3610
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    node = node.down;
+    result = result.+(node.rowId);
+    if (node.down.!=(header))
+      result = result.+(&quot;, &quot;)
+    else
+      ()
+  };
+  while$1()
+}
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          230
+        </td>
+        <td>
+          3516
+          -
+          3525
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #F0ADAD">
+          node.down
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          232
+        </td>
+        <td>
+          3534
+          -
+          3554
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          result.+(node.rowId)
+        </td>
+      </tr><tr>
+        <td>
+          119
+        </td>
+        <td>
+          231
+        </td>
+        <td>
+          3544
+          -
+          3554
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.rowId
+        </td>
+        <td style="background: #F0ADAD">
+          node.rowId
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          236
+        </td>
+        <td>
+          3564
+          -
+          3564
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          235
+        </td>
+        <td>
+          3588
+          -
+          3602
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          result = result.+(&quot;, &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          234
+        </td>
+        <td>
+          3588
+          -
+          3602
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          result.+(&quot;, &quot;)
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          237
+        </td>
+        <td>
+          3564
+          -
+          3564
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          120
+        </td>
+        <td>
+          233
+        </td>
+        <td>
+          3567
+          -
+          3586
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          node.down.!=(header)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          242
+        </td>
+        <td>
+          3617
+          -
+          3632
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          result.+(&quot;]\n&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          125
+        </td>
+        <td>
+          247
+        </td>
+        <td>
+          3650
+          -
+          3663
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          result.+(&quot;]&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          136
+        </td>
+        <td>
+          248
+        </td>
+        <td>
+          3807
+          -
+          3814
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Row.indexIn
+        </td>
+        <td style="background: #AEF1AE">
+          Row.this.indexIn
+        </td>
+      </tr><tr>
+        <td>
+          137
+        </td>
+        <td>
+          249
+        </td>
+        <td>
+          3829
+          -
+          3836
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          Row.cellsIn
+        </td>
+        <td style="background: #AEF1AE">
+          Row.this.cellsIn
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          250
+        </td>
+        <td>
+          3866
+          -
+          3876
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td style="background: #F0ADAD">
+          Row.this.cells.apply(idx)
+        </td>
+      </tr><tr>
+        <td>
+          140
+        </td>
+        <td>
+          251
+        </td>
+        <td>
+          3871
+          -
+          3871
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          144
+        </td>
+        <td>
+          252
+        </td>
+        <td>
+          3916
+          -
+          3963
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;(&quot;.+(Row.this.idx).+(&quot; -&gt; &quot;).+(scala.this.Predef.intArrayOps(Row.this.cells).mkString(&quot;, &quot;)).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          147
+        </td>
+        <td>
+          253
+        </td>
+        <td>
+          3982
+          -
+          3994
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Array.length
+        </td>
+        <td style="background: #AEF1AE">
+          Row.this.cells.length
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          254
+        </td>
+        <td>
+          4220
+          -
+          4225
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.rowId
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.rowId
+        </td>
+      </tr><tr>
+        <td>
+          157
+        </td>
+        <td>
+          255
+        </td>
+        <td>
+          4220
+          -
+          4225
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.Predef.int2Integer
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.int2Integer(LinkedMatrixNode.this.rowId)
+        </td>
+      </tr><tr>
+        <td>
+          161
+        </td>
+        <td>
+          256
+        </td>
+        <td>
+          4311
+          -
+          4320
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #F0ADAD">
+          this.down
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          265
+        </td>
+        <td>
+          4345
+          -
+          4429
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    if (next.rowId.==(searchRowId))
+      return scala.Some.apply[LinkedMatrixNode](next)
+    else
+      ();
+    next = next.down
+  };
+  while$3()
+}
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          267
+        </td>
+        <td>
+          4325
+          -
+          4325
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          264
+        </td>
+        <td>
+          4345
+          -
+          4345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.while$3
+        </td>
+        <td style="background: #F0ADAD">
+          while$3()
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          257
+        </td>
+        <td>
+          4331
+          -
+          4343
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          next.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          162
+        </td>
+        <td>
+          266
+        </td>
+        <td>
+          4325
+          -
+          4325
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          262
+        </td>
+        <td>
+          4353
+          -
+          4353
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          259
+        </td>
+        <td>
+          4390
+          -
+          4400
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[LinkedMatrixNode](next)
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          258
+        </td>
+        <td>
+          4356
+          -
+          4381
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #F0ADAD">
+          next.rowId.==(searchRowId)
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          261
+        </td>
+        <td>
+          4353
+          -
+          4353
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          163
+        </td>
+        <td>
+          260
+        </td>
+        <td>
+          4383
+          -
+          4400
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          LinkedMatrixNode.searchDown
+        </td>
+        <td style="background: #F0ADAD">
+          return scala.Some.apply[LinkedMatrixNode](next)
+        </td>
+      </tr><tr>
+        <td>
+          164
+        </td>
+        <td>
+          263
+        </td>
+        <td>
+          4414
+          -
+          4423
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #F0ADAD">
+          next.down
+        </td>
+      </tr><tr>
+        <td>
+          166
+        </td>
+        <td>
+          268
+        </td>
+        <td>
+          4441
+          -
+          4445
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          171
+        </td>
+        <td>
+          269
+        </td>
+        <td>
+          4483
+          -
+          4508
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.isInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          this.isInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          271
+        </td>
+        <td>
+          4518
+          -
+          4543
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          this.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          172
+        </td>
+        <td>
+          270
+        </td>
+        <td>
+          4518
+          -
+          4543
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          this.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          173
+        </td>
+        <td>
+          280
+        </td>
+        <td>
+          4555
+          -
+          4692
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  var node: LinkedMatrixNode = this.up;
+  while$4(){
+    if (node.isInstanceOf[Header].unary_!)
+      {
+        node = node.up;
+        while$4()
+      }
+    else
+      ()
+  };
+  node.asInstanceOf[Header]
+}
+        </td>
+      </tr><tr>
+        <td>
+          174
+        </td>
+        <td>
+          272
+        </td>
+        <td>
+          4574
+          -
+          4581
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.up
+        </td>
+        <td style="background: #AEF1AE">
+          this.up
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          277
+        </td>
+        <td>
+          4588
+          -
+          4588
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          276
+        </td>
+        <td>
+          4632
+          -
+          4646
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  node = node.up;
+  while$4()
+}
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          273
+        </td>
+        <td>
+          4594
+          -
+          4620
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td style="background: #AEF1AE">
+          node.isInstanceOf[Header].unary_!
+        </td>
+      </tr><tr>
+        <td>
+          175
+        </td>
+        <td>
+          278
+        </td>
+        <td>
+          4588
+          -
+          4588
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          274
+        </td>
+        <td>
+          4639
+          -
+          4646
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.up
+        </td>
+        <td style="background: #AEF1AE">
+          node.up
+        </td>
+      </tr><tr>
+        <td>
+          176
+        </td>
+        <td>
+          275
+        </td>
+        <td>
+          4637
+          -
+          4637
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.while$4
+        </td>
+        <td style="background: #AEF1AE">
+          while$4()
+        </td>
+      </tr><tr>
+        <td>
+          178
+        </td>
+        <td>
+          279
+        </td>
+        <td>
+          4661
+          -
+          4686
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          node.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          282
+        </td>
+        <td>
+          4727
+          -
+          4744
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.left_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.right.left_=(LinkedMatrixNode.this.left)
+        </td>
+      </tr><tr>
+        <td>
+          183
+        </td>
+        <td>
+          281
+        </td>
+        <td>
+          4740
+          -
+          4744
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.left
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.left
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          283
+        </td>
+        <td>
+          4762
+          -
+          4767
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.right
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.right
+        </td>
+      </tr><tr>
+        <td>
+          184
+        </td>
+        <td>
+          284
+        </td>
+        <td>
+          4749
+          -
+          4767
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.right_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.left.right_=(LinkedMatrixNode.this.right)
+        </td>
+      </tr><tr>
+        <td>
+          188
+        </td>
+        <td>
+          285
+        </td>
+        <td>
+          4804
+          -
+          4821
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.left_=
+        </td>
+        <td style="background: #F0ADAD">
+          LinkedMatrixNode.this.right.left_=(this)
+        </td>
+      </tr><tr>
+        <td>
+          189
+        </td>
+        <td>
+          286
+        </td>
+        <td>
+          4826
+          -
+          4843
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.right_=
+        </td>
+        <td style="background: #F0ADAD">
+          LinkedMatrixNode.this.left.right_=(this)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          288
+        </td>
+        <td>
+          4877
+          -
+          4891
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.down_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.up.down_=(LinkedMatrixNode.this.down)
+        </td>
+      </tr><tr>
+        <td>
+          193
+        </td>
+        <td>
+          287
+        </td>
+        <td>
+          4887
+          -
+          4891
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.down
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          289
+        </td>
+        <td>
+          4906
+          -
+          4908
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.up
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.up
+        </td>
+      </tr><tr>
+        <td>
+          194
+        </td>
+        <td>
+          290
+        </td>
+        <td>
+          4896
+          -
+          4908
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.up_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.down.up_=(LinkedMatrixNode.this.up)
+        </td>
+      </tr><tr>
+        <td>
+          198
+        </td>
+        <td>
+          291
+        </td>
+        <td>
+          4944
+          -
+          4958
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.up_=
+        </td>
+        <td style="background: #F0ADAD">
+          LinkedMatrixNode.this.down.up_=(this)
+        </td>
+      </tr><tr>
+        <td>
+          199
+        </td>
+        <td>
+          292
+        </td>
+        <td>
+          4963
+          -
+          4977
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.down_=
+        </td>
+        <td style="background: #F0ADAD">
+          LinkedMatrixNode.this.up.down_=(this)
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          298
+        </td>
+        <td>
+          5056
+          -
+          5056
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          297
+        </td>
+        <td>
+          5084
+          -
+          5144
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    node.right.coverVert();
+    node = node.right
+  };
+  while$5()
+}
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          299
+        </td>
+        <td>
+          5056
+          -
+          5056
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          293
+        </td>
+        <td>
+          5062
+          -
+          5082
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #AEF1AE">
+          node.right.!=(anchor)
+        </td>
+      </tr><tr>
+        <td>
+          204
+        </td>
+        <td>
+          296
+        </td>
+        <td>
+          5084
+          -
+          5084
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.while$5
+        </td>
+        <td style="background: #AEF1AE">
+          while$5()
+        </td>
+      </tr><tr>
+        <td>
+          205
+        </td>
+        <td>
+          294
+        </td>
+        <td>
+          5092
+          -
+          5114
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.coverVert
+        </td>
+        <td style="background: #AEF1AE">
+          node.right.coverVert()
+        </td>
+      </tr><tr>
+        <td>
+          206
+        </td>
+        <td>
+          295
+        </td>
+        <td>
+          5128
+          -
+          5138
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.right
+        </td>
+        <td style="background: #AEF1AE">
+          node.right
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          304
+        </td>
+        <td>
+          5258
+          -
+          5320
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    node.right.uncoverVert();
+    node = node.right
+  };
+  while$6()
+}
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          300
+        </td>
+        <td>
+          5236
+          -
+          5256
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          node.right.!=(anchor)
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          303
+        </td>
+        <td>
+          5258
+          -
+          5258
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.while$6
+        </td>
+        <td style="background: #F0ADAD">
+          while$6()
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          306
+        </td>
+        <td>
+          5230
+          -
+          5230
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          213
+        </td>
+        <td>
+          305
+        </td>
+        <td>
+          5230
+          -
+          5230
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          214
+        </td>
+        <td>
+          301
+        </td>
+        <td>
+          5266
+          -
+          5290
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.uncoverVert
+        </td>
+        <td style="background: #F0ADAD">
+          node.right.uncoverVert()
+        </td>
+      </tr><tr>
+        <td>
+          215
+        </td>
+        <td>
+          302
+        </td>
+        <td>
+          5304
+          -
+          5314
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.right
+        </td>
+        <td style="background: #F0ADAD">
+          node.right
+        </td>
+      </tr><tr>
+        <td>
+          220
+        </td>
+        <td>
+          307
+        </td>
+        <td>
+          5386
+          -
+          5391
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.right
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.right
+        </td>
+      </tr><tr>
+        <td>
+          220
+        </td>
+        <td>
+          308
+        </td>
+        <td>
+          5373
+          -
+          5391
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.right_=
+        </td>
+        <td style="background: #AEF1AE">
+          node.right_=(LinkedMatrixNode.this.right)
+        </td>
+      </tr><tr>
+        <td>
+          221
+        </td>
+        <td>
+          309
+        </td>
+        <td>
+          5396
+          -
+          5412
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.left_=
+        </td>
+        <td style="background: #AEF1AE">
+          node.left_=(this)
+        </td>
+      </tr><tr>
+        <td>
+          223
+        </td>
+        <td>
+          310
+        </td>
+        <td>
+          5422
+          -
+          5439
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.left_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.right.left_=(node)
+        </td>
+      </tr><tr>
+        <td>
+          224
+        </td>
+        <td>
+          311
+        </td>
+        <td>
+          5444
+          -
+          5456
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.right_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.right_=(node)
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          313
+        </td>
+        <td>
+          5515
+          -
+          5531
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.down_=
+        </td>
+        <td style="background: #AEF1AE">
+          node.down_=(LinkedMatrixNode.this.down)
+        </td>
+      </tr><tr>
+        <td>
+          229
+        </td>
+        <td>
+          312
+        </td>
+        <td>
+          5527
+          -
+          5531
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.down
+        </td>
+      </tr><tr>
+        <td>
+          230
+        </td>
+        <td>
+          314
+        </td>
+        <td>
+          5536
+          -
+          5550
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.up_=
+        </td>
+        <td style="background: #AEF1AE">
+          node.up_=(this)
+        </td>
+      </tr><tr>
+        <td>
+          232
+        </td>
+        <td>
+          315
+        </td>
+        <td>
+          5560
+          -
+          5574
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.up_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.down.up_=(node)
+        </td>
+      </tr><tr>
+        <td>
+          233
+        </td>
+        <td>
+          316
+        </td>
+        <td>
+          5579
+          -
+          5590
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.down_=
+        </td>
+        <td style="background: #AEF1AE">
+          LinkedMatrixNode.this.down_=(node)
+        </td>
+      </tr><tr>
+        <td>
+          239
+        </td>
+        <td>
+          317
+        </td>
+        <td>
+          5693
+          -
+          5703
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.right
+        </td>
+        <td style="background: #AEF1AE">
+          node.right
+        </td>
+      </tr><tr>
+        <td>
+          242
+        </td>
+        <td>
+          319
+        </td>
+        <td>
+          5790
+          -
+          5799
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #AEF1AE">
+          x$3.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          242
+        </td>
+        <td>
+          318
+        </td>
+        <td>
+          5772
+          -
+          5778
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.next
+        </td>
+        <td style="background: #AEF1AE">
+          next()
+        </td>
+      </tr><tr>
+        <td>
+          242
+        </td>
+        <td>
+          321
+        </td>
+        <td>
+          5725
+          -
+          5801
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.++
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Iterator.single[LinkedMatrixNode](node).++[LinkedMatrixNode](scala.`package`.Iterator.continually[LinkedMatrixNode](next()).takeWhile(((x$3: LinkedMatrixNode) =&gt; x$3.!=(this))))
+        </td>
+      </tr><tr>
+        <td>
+          242
+        </td>
+        <td>
+          320
+        </td>
+        <td>
+          5751
+          -
+          5800
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.takeWhile
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Iterator.continually[LinkedMatrixNode](next()).takeWhile(((x$3: LinkedMatrixNode) =&gt; x$3.!=(this)))
+        </td>
+      </tr><tr>
+        <td>
+          246
+        </td>
+        <td>
+          322
+        </td>
+        <td>
+          5843
+          -
+          5864
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Node(&quot;.+(LinkedMatrixNode.this.rowId).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          256
+        </td>
+        <td>
+          323
+        </td>
+        <td>
+          6081
+          -
+          6112
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          this.right.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          331
+        </td>
+        <td>
+          6137
+          -
+          6137
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.while$7
+        </td>
+        <td style="background: #F0ADAD">
+          while$7()
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          334
+        </td>
+        <td>
+          6117
+          -
+          6117
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          333
+        </td>
+        <td>
+          6117
+          -
+          6117
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          324
+        </td>
+        <td>
+          6123
+          -
+          6135
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          next.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          257
+        </td>
+        <td>
+          332
+        </td>
+        <td>
+          6137
+          -
+          6243
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    if (next.id.==(searchHeaderId))
+      return scala.Some.apply[Header](next)
+    else
+      ();
+    next = next.right.asInstanceOf[Header]
+  };
+  while$7()
+}
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          325
+        </td>
+        <td>
+          6148
+          -
+          6173
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #F0ADAD">
+          next.id.==(searchHeaderId)
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          328
+        </td>
+        <td>
+          6145
+          -
+          6145
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          327
+        </td>
+        <td>
+          6175
+          -
+          6192
+        </td>
+        <td>
+          Return
+        </td>
+        <td>
+          Header.searchRight
+        </td>
+        <td style="background: #F0ADAD">
+          return scala.Some.apply[Header](next)
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          326
+        </td>
+        <td>
+          6182
+          -
+          6192
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[Header](next)
+        </td>
+      </tr><tr>
+        <td>
+          258
+        </td>
+        <td>
+          329
+        </td>
+        <td>
+          6145
+          -
+          6145
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          259
+        </td>
+        <td>
+          330
+        </td>
+        <td>
+          6206
+          -
+          6237
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          next.right.asInstanceOf[Header]
+        </td>
+      </tr><tr>
+        <td>
+          261
+        </td>
+        <td>
+          335
+        </td>
+        <td>
+          6255
+          -
+          6259
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          265
+        </td>
+        <td>
+          336
+        </td>
+        <td>
+          6296
+          -
+          6297
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          266
+        </td>
+        <td>
+          337
+        </td>
+        <td>
+          6313
+          -
+          6322
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          this.down
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          343
+        </td>
+        <td>
+          6327
+          -
+          6327
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          342
+        </td>
+        <td>
+          6347
+          -
+          6390
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    node = node.down;
+    i = i.+(1)
+  };
+  while$8()
+}
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          341
+        </td>
+        <td>
+          6347
+          -
+          6347
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.while$8
+        </td>
+        <td style="background: #AEF1AE">
+          while$8()
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          344
+        </td>
+        <td>
+          6327
+          -
+          6327
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          267
+        </td>
+        <td>
+          338
+        </td>
+        <td>
+          6333
+          -
+          6345
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #AEF1AE">
+          node.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          268
+        </td>
+        <td>
+          339
+        </td>
+        <td>
+          6362
+          -
+          6371
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          node.down
+        </td>
+      </tr><tr>
+        <td>
+          269
+        </td>
+        <td>
+          340
+        </td>
+        <td>
+          6378
+          -
+          6384
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          i.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          272
+        </td>
+        <td>
+          345
+        </td>
+        <td>
+          6400
+          -
+          6401
+        </td>
+        <td>
+          ApplyImplicitView
+        </td>
+        <td>
+          scala.Predef.int2Integer
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Predef.int2Integer(i)
+        </td>
+      </tr><tr>
+        <td>
+          276
+        </td>
+        <td>
+          346
+        </td>
+        <td>
+          6450
+          -
+          6459
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          this.down
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          352
+        </td>
+        <td>
+          6464
+          -
+          6464
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          351
+        </td>
+        <td>
+          6484
+          -
+          6535
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  {
+    Header.this.coverRow(node);
+    node = node.down
+  };
+  while$9()
+}
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          350
+        </td>
+        <td>
+          6484
+          -
+          6484
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.while$9
+        </td>
+        <td style="background: #AEF1AE">
+          while$9()
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          353
+        </td>
+        <td>
+          6464
+          -
+          6464
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          277
+        </td>
+        <td>
+          347
+        </td>
+        <td>
+          6470
+          -
+          6482
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #AEF1AE">
+          node.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          278
+        </td>
+        <td>
+          348
+        </td>
+        <td>
+          6492
+          -
+          6506
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.coverRow
+        </td>
+        <td style="background: #AEF1AE">
+          Header.this.coverRow(node)
+        </td>
+      </tr><tr>
+        <td>
+          279
+        </td>
+        <td>
+          349
+        </td>
+        <td>
+          6520
+          -
+          6529
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          node.down
+        </td>
+      </tr><tr>
+        <td>
+          281
+        </td>
+        <td>
+          354
+        </td>
+        <td>
+          6540
+          -
+          6557
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.coverHoriz
+        </td>
+        <td style="background: #AEF1AE">
+          this.coverHoriz()
+        </td>
+      </tr><tr>
+        <td>
+          286
+        </td>
+        <td>
+          355
+        </td>
+        <td>
+          6611
+          -
+          6620
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #F0ADAD">
+          this.down
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          361
+        </td>
+        <td>
+          6625
+          -
+          6625
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          360
+        </td>
+        <td>
+          6645
+          -
+          6698
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          {
+  {
+    Header.this.uncoverRow(node);
+    node = node.down
+  };
+  while$10()
+}
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          359
+        </td>
+        <td>
+          6645
+          -
+          6645
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.while$10
+        </td>
+        <td style="background: #F0ADAD">
+          while$10()
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          362
+        </td>
+        <td>
+          6625
+          -
+          6625
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          287
+        </td>
+        <td>
+          356
+        </td>
+        <td>
+          6631
+          -
+          6643
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #F0ADAD">
+          node.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          288
+        </td>
+        <td>
+          357
+        </td>
+        <td>
+          6653
+          -
+          6669
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.uncoverRow
+        </td>
+        <td style="background: #F0ADAD">
+          Header.this.uncoverRow(node)
+        </td>
+      </tr><tr>
+        <td>
+          289
+        </td>
+        <td>
+          358
+        </td>
+        <td>
+          6683
+          -
+          6692
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #F0ADAD">
+          node.down
+        </td>
+      </tr><tr>
+        <td>
+          291
+        </td>
+        <td>
+          363
+        </td>
+        <td>
+          6703
+          -
+          6722
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          LinkedMatrixNode.uncoverHoriz
+        </td>
+        <td style="background: #F0ADAD">
+          this.uncoverHoriz()
+        </td>
+      </tr><tr>
+        <td>
+          295
+        </td>
+        <td>
+          364
+        </td>
+        <td>
+          6751
+          -
+          6777
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          Header.this.right.asInstanceOf[Column]
+        </td>
+      </tr><tr>
+        <td>
+          299
+        </td>
+        <td>
+          365
+        </td>
+        <td>
+          6810
+          -
+          6835
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #F0ADAD">
+          Header.this.left.asInstanceOf[Column]
+        </td>
+      </tr><tr>
+        <td>
+          303
+        </td>
+        <td>
+          366
+        </td>
+        <td>
+          6876
+          -
+          6911
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Any.asInstanceOf
+        </td>
+        <td style="background: #AEF1AE">
+          this.asInstanceOf[LinkedMatrixNode]
+        </td>
+      </tr><tr>
+        <td>
+          305
+        </td>
+        <td>
+          367
+        </td>
+        <td>
+          6944
+          -
+          6953
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          LinkedMatrixNode.down
+        </td>
+        <td style="background: #AEF1AE">
+          node.down
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          370
+        </td>
+        <td>
+          6975
+          -
+          7024
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.Iterator.takeWhile
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Iterator.continually[LinkedMatrixNode](next()).takeWhile(((x$4: LinkedMatrixNode) =&gt; x$4.!=(this)))
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          369
+        </td>
+        <td>
+          7014
+          -
+          7023
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Object.!=
+        </td>
+        <td style="background: #AEF1AE">
+          x$4.!=(this)
+        </td>
+      </tr><tr>
+        <td>
+          308
+        </td>
+        <td>
+          368
+        </td>
+        <td>
+          6996
+          -
+          7002
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          Header.next
+        </td>
+        <td style="background: #AEF1AE">
+          next()
+        </td>
+      </tr><tr>
+        <td>
+          312
+        </td>
+        <td>
+          371
+        </td>
+        <td>
+          7066
+          -
+          7086
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Header(&quot;.+(Header.this.id).+(&quot;)&quot;)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
