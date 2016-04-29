@@ -1,3 +1,4 @@
+// $COVERAGE-OFF$Disabling highlighting by default until a workaround for https://issues.scala-lang.org/browse/SI-8596 is found
 object SudokuPuzzles {
   val testCases = Map(
       "puzzle1, Easy, 9x9" -> "puzzles/puzzle1",
@@ -14,3 +15,4 @@ object SudokuPuzzles {
       "puzzle13, Hard, 9x9" -> "puzzles/puzzle13")
   lazy val baseLineTest = testCases.getOrElse("puzzle1, Easy, 9x9", "")
 }
+// $COVERAGE-ON

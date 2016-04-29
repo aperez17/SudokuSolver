@@ -10,7 +10,7 @@ lazy val root = (project in file(".")).
     name := "SudokuSolver",
     scalaVersion := "2.11.8",
     libraryDependencies += "org.specs2" %% "specs2-core" % "3.0" % "test",
-    coverageEnabled := false,
+    coverageEnabled := true,
 	resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases",
 	scalacOptions in Test ++= Seq("-Yrangepos")
   )

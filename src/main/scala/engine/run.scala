@@ -1,3 +1,4 @@
+// $COVERAGE-OFF$Disabling highlighting by default until a workaround for https://issues.scala-lang.org/browse/SI-8596 is found
 object Run {
   def main(args: Array[String]) = {
     val BruteForceEngine = SudokuEngine("BruteForce", BruteForce)
@@ -39,3 +40,4 @@ object Run {
     println("DONE")
   }
 }
+// $COVERAGE-ON

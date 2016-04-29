@@ -1,3 +1,4 @@
+// $COVERAGE-OFF$Disabling highlighting by default until a workaround for https://issues.scala-lang.org/browse/SI-8596 is found
 case class SudokuEngine(
     algorithm: String,
     implementation: SudokuSolver){
@@ -31,3 +32,4 @@ case class SudokuEngine(
     println("Total Elapsed time: " + sum/1000000000.0 + "s")
   }
 }
+// $COVERAGE-ON
